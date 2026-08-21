@@ -62,4 +62,30 @@ describe('ColacionForm', () => {
     expect(input.items).toHaveLength(1);
     expect(input.items[0].rol).toBe('fondo');
   });
+
+  it('no permite agregar más de un item con rol agregado', async () => {
+    const onSubmit = vi.fn();
+    render(<ColacionForm productos={productos} onSubmit={onSubmit} onCancel={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText(/Nombre/), { target: { value: 'Menú' } });
+
+    // agregar un item con rol fondo
+    fireEvent.change(screen.getByDisplayValue('— Producto del catálogo —'), { target: { value: 'f1' } });
+    fireEvent.click(screen.getByText('Agregar'));
+
+    // agregar un item con rol agregado
+    fireEvent.change(screen.getByDisplayValue('— Producto del catálogo —'), { target: { value: 'a1' } });
+    fireEvent.change(screen.getByDisplayValue('fondo'), { target: { value: 'agregado' } });
+    fireEvent.click(screen.getByText('Agregar'));
+
+    // intentar agregar un segundo item con rol agregado (el select de rol sigue en 'agregado')
+    fireEvent.change(screen.getByDisplayValue('— Producto del catálogo —'), { target: { value: 'a1' } });
+    fireEvent.click(screen.getByText('Agregar'));
+
+    // el segundo agregado debe ser rechazado con un mensaje de error
+    await vi.waitFor(() =>
+      expect(screen.getByText('Solo se permite un agregado por colación')).toBeDefined(),
+    );
+    // solo debe haber 2 items en la lista (fondo + 1 agregado), no 3
+    expect(screen.getAllByText('Quitar')).toHaveLength(2);
+  });
 });

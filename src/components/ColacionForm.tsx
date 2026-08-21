@@ -34,6 +34,10 @@ export function ColacionForm({ productos, inicial, onSubmit, onCancel }: Props) 
       setError('Selecciona un producto del catálogo');
       return;
     }
+    if (rolSel === 'agregado' && items.some((it) => it.rol === 'agregado')) {
+      setError('Solo se permite un agregado por colación');
+      return;
+    }
     setError(null);
     const orden = items.length + 1;
     setItems((prev) => [...prev, { productoId: productoSel, rol: rolSel, orden, nota: nota.trim() || undefined }]);
@@ -62,6 +66,11 @@ export function ColacionForm({ productos, inicial, onSubmit, onCancel }: Props) 
     const tieneFondo = items.some((it) => it.rol === 'fondo');
     if (!tieneFondo) {
       setError('La colación debe tener al menos un item con rol "fondo"');
+      return;
+    }
+    const agregados = items.filter((it) => it.rol === 'agregado');
+    if (agregados.length > 1) {
+      setError('Solo se permite un agregado por colación');
       return;
     }
     setError(null);
