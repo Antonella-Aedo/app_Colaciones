@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { Colacion, ColacionInput, ColacionItem, Producto, RolItem } from '../types';
+import { hoyISO } from '../utils/date';
 import styles from './ColacionForm.module.css';
 
 const ROLES: RolItem[] = ['fondo', 'agregado', 'ensalada', 'extra'];
@@ -164,8 +165,4 @@ export function ColacionForm({ productos, inicial, onSubmit, onCancel }: Props) 
       </div>
     </form>
   );
-}
-
-function hoyISO(): string {
-  return new Date().toISOString().slice(0, 10);
 }
