@@ -91,3 +91,65 @@ describe('api/pedidos (validación runtime)', () => {
     await expect(updatePedido(creado.id, invalido)).rejects.toThrow();
   });
 });
+
+import { deletePedido } from '../../src/api/pedidos';
+
+describe('api/pedidos (getPedido y deletePedido)', () => {
+  it('getPedido retorna un pedido por id', async () => {
+    // Arrange: crear un pedido
+    const creado = await createPedido(pedidoInput);
+
+    // Act: obtener el pedido por id
+    const pedido = await getPedido(creado.id);
+
+    // Assert: retorna el pedido con los datos correctos
+    expect(pedido).not.toBeNull();
+    expect(pedido!.id).toBe(creado.id);
+    expect(pedido!.cliente).toBe('Juan');
+    expect(pedido!.fecha).toBe('2026-08-20');
+    expect(pedido!.items).toHaveLength(1);
+    expect(pedido!.items[0].productoId).toBe('1');
+    expect(pedido!.total).toBe(3000);
+    expect(pedido!.estado).toBe('pendiente');
+    expect(pedido!.registradoPor).toBe('Ana');
+  });
+
+  it('getPedido retorna null para id inexistente', async () => {
+    const pedido = await getPedido('no-existe-123');
+    expect(pedido).toBeNull();
+  });
+
+  it('deletePedido elimina un pedido', async () => {
+    // Arrange: crear un pedido
+    const creado = await createPedido(pedidoInput);
+
+    // Act: eliminar el pedido
+    const resultado = await deletePedido(creado.id);
+
+    // Assert: deletePedido retorna { id }
+    expect(resultado).toEqual({ id: creado.id });
+
+    // Assert: el pedido ya no existe
+    const pedido = await getPedido(creado.id);
+    expect(pedido).toBeNull();
+  });
+
+  it('getPedidos retorna lista vacía cuando no hay pedidos', async () => {
+    // beforeEach ya llama a resetStore, el store está limpio
+    const lista = await getPedidos();
+    expect(lista).toEqual([]);
+  });
+
+  it('getPedidos retorna múltiples pedidos', async () => {
+    // Arrange: crear 3 pedidos
+    await createPedido(pedidoInput);
+    await createPedido({ ...pedidoInput, cliente: 'Pedro' });
+    await createPedido({ ...pedidoInput, cliente: 'Maria' });
+
+    // Act: obtener la lista
+    const lista = await getPedidos();
+
+    // Assert: retorna un arreglo de longitud 3
+    expect(lista).toHaveLength(3);
+  });
+});
