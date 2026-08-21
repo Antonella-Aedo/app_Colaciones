@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import '../helpers/mockFirestore';
 import { ProductoForm } from '../../src/components/ProductoForm';
 import type { ProductoInput } from '../../src/types';
@@ -36,7 +36,9 @@ describe('ProductoForm', () => {
     fireEvent.change(screen.getByLabelText(/Precio/), { target: { value: 5000 } });
     fireEvent.change(screen.getByLabelText(/^Categoría$/), { target: { value: 'fondo' } });
 
-    fireEvent.click(screen.getByText('Guardar'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Guardar'));
+    });
     await vi.waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
 
     const input = onSubmit.mock.calls[0][0] as ProductoInput;
@@ -57,7 +59,9 @@ describe('ProductoForm', () => {
     // aparece el input de categoría personalizada
     fireEvent.change(screen.getByLabelText(/Categoría personalizada/), { target: { value: 'Postres' } });
 
-    fireEvent.click(screen.getByText('Guardar'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Guardar'));
+    });
     await vi.waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
 
     const input = onSubmit.mock.calls[0][0] as ProductoInput;
@@ -72,7 +76,9 @@ describe('ProductoForm', () => {
     fireEvent.change(screen.getByLabelText(/Nombre/), { target: { value: 'Agua de hierba' } });
     fireEvent.change(screen.getByLabelText(/Precio/), { target: { value: 0 } });
 
-    fireEvent.click(screen.getByText('Guardar'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Guardar'));
+    });
     await vi.waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
 
     const input = onSubmit.mock.calls[0][0] as ProductoInput;

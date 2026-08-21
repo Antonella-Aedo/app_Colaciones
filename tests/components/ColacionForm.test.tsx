@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import '../helpers/mockFirestore';
 import { ColacionForm } from '../../src/components/ColacionForm';
 import type { Producto, ColacionInput } from '../../src/types';
@@ -55,7 +55,9 @@ describe('ColacionForm', () => {
     fireEvent.change(screen.getByDisplayValue('— Producto del catálogo —'), { target: { value: 'f1' } });
     fireEvent.click(screen.getByText('Agregar'));
 
-    fireEvent.click(screen.getByText('Guardar colación'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Guardar colación'));
+    });
     await vi.waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     const input = onSubmit.mock.calls[0][0] as ColacionInput;
     expect(input.nombre).toBe('Menú del día');
