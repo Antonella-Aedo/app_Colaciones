@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type {
   Colacion,
+  Pedido,
   PedidoItem,
   PedidoInput,
   Producto,
@@ -12,16 +13,17 @@ import styles from './PedidoForm.module.css';
 interface Props {
   productos: Producto[];
   colaciones: Colacion[];
+  inicial?: Pedido | null;
   onSubmit: (input: PedidoInput) => Promise<void>;
   onCancel: () => void;
 }
 
-export function PedidoForm({ productos, colaciones, onSubmit, onCancel }: Props) {
-  const [cliente, setCliente] = useState('');
-  const [registradoPor, setRegistradoPor] = useState('');
-  const [fecha, setFecha] = useState(hoyISO());
-  const [colacionId, setColacionId] = useState<string | null>(null);
-  const [items, setItems] = useState<PedidoItem[]>([]);
+export function PedidoForm({ productos, colaciones, inicial, onSubmit, onCancel }: Props) {
+  const [cliente, setCliente] = useState(inicial?.cliente ?? '');
+  const [registradoPor, setRegistradoPor] = useState(inicial?.registradoPor ?? '');
+  const [fecha, setFecha] = useState(inicial?.fecha ?? hoyISO());
+  const [colacionId, setColacionId] = useState<string | null>(inicial?.colacionId ?? null);
+  const [items, setItems] = useState<PedidoItem[]>(inicial?.items ?? []);
   const [productoSel, setProductoSel] = useState('');
   const [rolSel, setRolSel] = useState<RolItem | 'bebida' | 'crema'>('fondo');
   const [cantidad, setCantidad] = useState(1);
@@ -135,7 +137,7 @@ export function PedidoForm({ productos, colaciones, onSubmit, onCancel }: Props)
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
-      <h2 className={styles.title}>Nuevo pedido</h2>
+      <h2 className={styles.title}>{inicial ? 'Editar pedido' : 'Nuevo pedido'}</h2>
       {error && <p className={styles.error}>{error}</p>}
 
       <div className={styles.row}>
@@ -258,7 +260,7 @@ export function PedidoForm({ productos, colaciones, onSubmit, onCancel }: Props)
 
       <div className={styles.actions}>
         <button type="submit" className="primary" disabled={guardando}>
-          {guardando ? 'Guardando…' : 'Guardar pedido'}
+          {guardando ? 'Guardando…' : inicial ? 'Guardar cambios' : 'Guardar pedido'}
         </button>
         <button type="button" onClick={onCancel}>Cancelar</button>
       </div>
