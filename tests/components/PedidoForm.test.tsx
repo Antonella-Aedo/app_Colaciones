@@ -99,4 +99,31 @@ describe('PedidoForm', () => {
     await vi.waitFor(() => expect(screen.getByText('Agrega al menos un item')).toBeDefined());
     expect(onSubmit).not.toHaveBeenCalled();
   });
+
+  it('calcula el total correctamente (Σ precio × cantidad)', async () => {
+    const productosTotal: Producto[] = [
+      { id: 't1', nombre: 'Producto 1500', descripcion: '', precio: 1500, categoria: 'fondo', disponible: true },
+      { id: 't2', nombre: 'Producto 1000', descripcion: '', precio: 1000, categoria: 'bebida', disponible: true },
+    ];
+    const onSubmit = vi.fn(async (_input: PedidoInput): Promise<void> => {});
+    render(<PedidoForm productos={productosTotal} colaciones={[]} onSubmit={onSubmit} onCancel={vi.fn()} />);
+
+    // Item 1: precio=1500, cantidad=2 → 3000
+    fireEvent.change(screen.getByDisplayValue('— Producto —'), { target: { value: 't1' } });
+    fireEvent.change(screen.getByRole('spinbutton'), { target: { value: 2 } });
+    fireEvent.click(screen.getByText('Agregar'));
+
+    // Item 2: precio=1000, cantidad=1 → 1000
+    fireEvent.change(screen.getByDisplayValue('— Producto —'), { target: { value: 't2' } });
+    fireEvent.click(screen.getByText('Agregar'));
+
+    // Llenar cliente y enviar
+    fireEvent.change(screen.getByLabelText(/Cliente/), { target: { value: 'Juan' } });
+    fireEvent.click(screen.getByText('Guardar pedido'));
+    await vi.waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+
+    const input = onSubmit.mock.calls[0][0] as PedidoInput;
+    // Σ precio × cantidad = 1500×2 + 1000×1 = 4000
+    expect(input.total).toBe(4000);
+  });
 });
