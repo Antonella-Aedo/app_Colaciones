@@ -6,6 +6,10 @@ import {
   setDoc,
   addDoc,
   deleteDoc,
+  query,
+  limit,
+  startAfter,
+  orderBy,
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import type { Pedido, PedidoInput } from '../types';
@@ -16,6 +20,25 @@ const COL = 'pedidos';
 export async function getPedidos(): Promise<Pedido[]> {
   const snap = await getDocs(collection(db, COL));
   return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Pedido, 'id'>) }));
+}
+
+/**
+ * Obtiene pedidos paginados (ordenados por fecha descendente) usando cursor-based pagination.
+ * Mantiene getPedidos() sin cambios para retrocompatibilidad.
+ */
+export async function getPedidosPaginated(
+  opts?: { limit?: number; startAfterId?: string },
+): Promise<{ items: Pedido[]; hasMore: boolean; lastDocId: string | null }> {
+  const lim = opts?.limit ?? 50;
+  let q = query(collection(db, COL), orderBy('fecha', 'desc'), limit(lim));
+  if (opts?.startAfterId) {
+    q = query(collection(db, COL), orderBy('fecha', 'desc'), startAfter(doc(db, COL, opts.startAfterId)), limit(lim));
+  }
+  const snap = await getDocs(q);
+  const items = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Pedido, 'id'>) }));
+  const hasMore = items.length === lim;
+  const lastDocId = items.length > 0 ? items[items.length - 1].id : null;
+  return { items, hasMore, lastDocId };
 }
 
 export async function getPedido(id: string): Promise<Pedido | null> {

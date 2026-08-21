@@ -9,6 +9,9 @@ import {
   query,
   where,
   writeBatch,
+  limit,
+  startAfter,
+  orderBy,
   type DocumentReference,
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
@@ -20,6 +23,25 @@ const COL = 'colaciones';
 export async function getColaciones(): Promise<Colacion[]> {
   const snap = await getDocs(collection(db, COL));
   return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Colacion, 'id'>) }));
+}
+
+/**
+ * Obtiene colaciones paginadas (ordenadas por fecha descendente) usando cursor-based pagination.
+ * Mantiene getColaciones() sin cambios para retrocompatibilidad.
+ */
+export async function getColacionesPaginated(
+  opts?: { limit?: number; startAfterId?: string },
+): Promise<{ items: Colacion[]; hasMore: boolean; lastDocId: string | null }> {
+  const lim = opts?.limit ?? 50;
+  let q = query(collection(db, COL), orderBy('fecha', 'desc'), limit(lim));
+  if (opts?.startAfterId) {
+    q = query(collection(db, COL), orderBy('fecha', 'desc'), startAfter(doc(db, COL, opts.startAfterId)), limit(lim));
+  }
+  const snap = await getDocs(q);
+  const items = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Colacion, 'id'>) }));
+  const hasMore = items.length === lim;
+  const lastDocId = items.length > 0 ? items[items.length - 1].id : null;
+  return { items, hasMore, lastDocId };
 }
 
 export async function getColacion(id: string): Promise<Colacion | null> {
