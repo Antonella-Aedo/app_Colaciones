@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { resetStore } from '../helpers/mockFirestore';
 import {
   getColaciones,
+  getColacion,
+  getColacionActiva,
   createColacion,
   updateColacion,
   deleteColacion,
@@ -78,5 +80,72 @@ describe('api/colaciones (validación runtime)', () => {
     const creado = await createColacion(colacionInput);
     const invalido = { ...colacionInput, items: [] };
     await expect(updateColacion(creado.id, invalido)).rejects.toThrow();
+  });
+});
+
+describe('api/colaciones — regla "solo una activa a la vez"', () => {
+  it('createColacion con activa=true desactiva las demás (solo una activa a la vez)', async () => {
+    const primera = await createColacion({ ...colacionInput, activa: true, nombre: 'Primera' });
+    expect(primera.activa).toBe(true);
+
+    const segunda = await createColacion({ ...colacionInput, activa: true, nombre: 'Segunda' });
+    expect(segunda.activa).toBe(true);
+
+    const lista = await getColaciones();
+    expect(lista).toHaveLength(2);
+
+    const primeraReload = lista.find((c) => c.id === primera.id);
+    const segundaReload = lista.find((c) => c.id === segunda.id);
+    expect(primeraReload?.activa).toBe(false);
+    expect(segundaReload?.activa).toBe(true);
+  });
+
+  it('activarColacion desactiva las demás', async () => {
+    const primera = await createColacion({ ...colacionInput, activa: false, nombre: 'Primera' });
+    const segunda = await createColacion({ ...colacionInput, activa: false, nombre: 'Segunda' });
+
+    await activarColacion(primera.id);
+    let lista = await getColaciones();
+    expect(lista.find((c) => c.id === primera.id)?.activa).toBe(true);
+    expect(lista.find((c) => c.id === segunda.id)?.activa).toBe(false);
+
+    await activarColacion(segunda.id);
+    lista = await getColaciones();
+    expect(lista.find((c) => c.id === segunda.id)?.activa).toBe(true);
+    expect(lista.find((c) => c.id === primera.id)?.activa).toBe(false);
+  });
+
+  it('getColacionActiva retorna solo la colacion activa', async () => {
+    const primera = await createColacion({ ...colacionInput, activa: false, nombre: 'Primera' });
+    const segunda = await createColacion({ ...colacionInput, activa: false, nombre: 'Segunda' });
+    await activarColacion(segunda.id);
+
+    const activa = await getColacionActiva();
+    expect(activa).not.toBeNull();
+    expect(activa?.id).toBe(segunda.id);
+    expect(activa?.activa).toBe(true);
+    expect(activa?.id).not.toBe(primera.id);
+  });
+
+  it('getColacionActiva retorna null cuando no hay colacion activa', async () => {
+    await createColacion({ ...colacionInput, activa: false, nombre: 'Inactiva' });
+    const activa = await getColacionActiva();
+    expect(activa).toBeNull();
+  });
+});
+
+describe('api/colaciones — getColacion (por id)', () => {
+  it('getColacion retorna null para id inexistente', async () => {
+    const resultado = await getColacion('id-inexistente');
+    expect(resultado).toBeNull();
+  });
+
+  it('getColacion retorna la colacion por id', async () => {
+    const creado = await createColacion({ ...colacionInput, nombre: 'Menú especial' });
+    const encontrado = await getColacion(creado.id);
+    expect(encontrado).not.toBeNull();
+    expect(encontrado?.id).toBe(creado.id);
+    expect(encontrado?.nombre).toBe('Menú especial');
+    expect(encontrado?.items).toHaveLength(3);
   });
 });

@@ -24,20 +24,47 @@ const hoisted = vi.hoisted(() => {
 
 interface FakeDocRef { id: string; col: string; }
 interface FakeColRef { id: string; }
+interface FakeFilter { field: string; op: '==' | '!=' | string; value: unknown; }
+interface FakeQuery { __collection: string; __filters: FakeFilter[]; }
 
 vi.mock('firebase/firestore', () => {
   const { getCollection } = hoisted;
   return {
     collection: (_db: unknown, name: string): FakeColRef => ({ id: name }),
-    doc: (_db: unknown, col: string, id: string): FakeDocRef => ({ id, col }),
-    getDocs: async (ref: FakeColRef) => {
-      const col = getCollection(ref.id);
-      const docs = Array.from(col.entries()).map(([id, data]) => ({
+    // Soporta dos formas: doc(db, col, id) y doc(collectionRef) (auto-id).
+    doc: (...args: unknown[]): FakeDocRef => {
+      if (args.length >= 3) {
+        return { id: args[2] as string, col: args[1] as string };
+      }
+      // doc(collectionRef) → genera id automático
+      const colRef = args[0] as FakeColRef;
+      const id = `auto-${Math.random().toString(36).slice(2, 9)}`;
+      return { id, col: colRef.id };
+    },
+    getDocs: async (ref: FakeColRef | FakeQuery) => {
+      let colName: string;
+      let filters: FakeFilter[] = [];
+      if (ref && typeof ref === 'object' && '__filters' in ref) {
+        colName = (ref as FakeQuery).__collection;
+        filters = (ref as FakeQuery).__filters;
+      } else {
+        colName = (ref as FakeColRef).id;
+      }
+      const col = getCollection(colName);
+      let docs = Array.from(col.entries()).map(([id, data]) => ({
         id,
         data: () => ({ ...data }),
         exists: () => true as const,
-        ref: { id, col: ref.id } as FakeDocRef,
+        ref: { id, col: colName } as FakeDocRef,
       }));
+      if (filters.length > 0) {
+        docs = docs.filter((d) => filters.every((f) => {
+          const val = (d.data() as DocData)[f.field];
+          if (f.op === '==') return val === f.value;
+          if (f.op === '!=') return val !== f.value;
+          return true;
+        }));
+      }
       return { docs, empty: docs.length === 0 };
     },
     getDoc: async (ref: FakeDocRef) => {
@@ -60,8 +87,13 @@ vi.mock('firebase/firestore', () => {
     deleteDoc: async (ref: FakeDocRef) => {
       getCollection(ref.col).delete(ref.id);
     },
-    query: (ref: FakeColRef) => ref,
-    where: () => ({ __where: true }),
+    query: (ref: FakeColRef, ...constraints: unknown[]): FakeQuery => ({
+      __collection: ref.id,
+      __filters: constraints.filter((c): c is FakeFilter =>
+        !!c && typeof c === 'object' && 'field' in (c as Record<string, unknown>),
+      ),
+    }),
+    where: (field: string, op: string, value: unknown): FakeFilter => ({ field, op, value }),
     writeBatch: () => {
       const ops: Array<() => void> = [];
       return {
