@@ -140,6 +140,9 @@ service cloud.firestore {
 
     function colacionValida() {
       let data = request.resource.data;
+      // TODO post-MVP: exigir que data.creadoPor == request.auth.uid
+      //   (los datos existentes tienen texto libre; alinear primero la app
+      //   para que escriba el uid del usuario autenticado).
       return hasOnlyFields(data, ['nombre', 'fecha', 'activa', 'creadoPor', 'items'])
         && nonEmptyStr(data.nombre)
         && isString(data.fecha)
@@ -168,6 +171,9 @@ service cloud.firestore {
 
     function pedidoValido() {
       let data = request.resource.data;
+      // TODO post-MVP: exigir que data.registradoPor == request.auth.uid
+      //   (los datos existentes tienen texto libre; alinear primero la app
+      //   para que escriba el uid del usuario autenticado).
       return hasOnlyFields(data, ['fecha', 'cliente', 'registradoPor', 'colacionId', 'items', 'total', 'estado'])
         && isString(data.fecha)
         && nonEmptyStr(data.cliente)

@@ -1,7 +1,10 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet } from 'react-router';
+import { useAuth } from '../firebase/auth';
 import styles from './Layout.module.css';
 
 export function Layout() {
+  const { user, logout } = useAuth();
+
   return (
     <div className={styles.app}>
       <header className={styles.header}>
@@ -26,6 +29,12 @@ export function Layout() {
             Pedidos
           </NavLink>
         </nav>
+        <div className={styles.user}>
+          {user?.email && <span className={styles.email}>{user.email}</span>}
+          <button className={styles.logout} onClick={() => logout()}>
+            Cerrar sesión
+          </button>
+        </div>
       </header>
       <main className={styles.main}>
         <Outlet />
