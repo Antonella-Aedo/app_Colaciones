@@ -1,22 +1,37 @@
 /**
  * Seed inicial del catálogo de productos en Firestore.
  * Ejecutar una sola vez: npx tsx scripts/seed-productos.ts
+ *
+ * Requiere Node 20.6+ (usa process.loadEnvFile para leer .env).
+ * El config de Firebase se carga desde VITE_FIREBASE_CONFIG (igual que src/firebase/config.ts),
+ * NUNCA debe ir hardcodeado en este archivo.
  */
-import { initializeApp } from 'firebase/app';
+import { initializeApp, type FirebaseOptions } from 'firebase/app';
 import { getFirestore, collection, addDoc, writeBatch, doc } from 'firebase/firestore';
 
-const firebaseConfig = {
-  projectId: 'app-colaciones-506203',
-  appId: '1:313826246588:web:3e41b0becad24f089475b9',
-  storageBucket: 'app-colaciones-506203.firebasestorage.app',
-<<<<<<< HEAD
-  apiKey: 'AIzaSyBybGzGns8SEkuD5ha_v24NC3m_nBThC7M',
-=======
-  apiKey: '***REDACTED***',
->>>>>>> 44227fd (feat: migracion a Firebase Firestore + deploy a Firebase Hosting)
-  authDomain: 'app-colaciones-506203.firebaseapp.com',
-  messagingSenderId: '313826246588',
-};
+// Carga variables de .env cuando el script se ejecuta fuera de Vite (Node >= 20.6).
+// Si no existe .env, se ignora silenciosamente; la validación de abajo fallará con un mensaje claro.
+try {
+  process.loadEnvFile();
+} catch {
+  // .env ausente o no soportado: se continúa, el error se lanza abajo si falta la variable.
+}
+
+function getConfig(): FirebaseOptions {
+  const raw = process.env.VITE_FIREBASE_CONFIG as string | undefined;
+  if (!raw) {
+    throw new Error(
+      'VITE_FIREBASE_CONFIG no está definida. Copia .env.example a .env y configura Firebase.',
+    );
+  }
+  try {
+    return JSON.parse(raw) as FirebaseOptions;
+  } catch {
+    throw new Error('VITE_FIREBASE_CONFIG no es JSON válido. Debe ser un objeto JSON serializado.');
+  }
+}
+
+const firebaseConfig = getConfig();
 
 interface ProductoSeed {
   nombre: string;
