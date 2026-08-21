@@ -1,13 +1,18 @@
-import type { Pedido } from '../types';
+import type { EstadoPedido, Pedido } from '../types';
 import styles from './PedidoList.module.css';
 
 interface Props {
   pedidos: Pedido[];
   loading: boolean;
   error: string | null;
+  onEdit: (p: Pedido) => void;
+  onDelete: (id: string) => void;
+  onChangeEstado: (id: string, estado: EstadoPedido) => void;
 }
 
-export function PedidoList({ pedidos, loading, error }: Props) {
+const ESTADOS: EstadoPedido[] = ['pendiente', 'entregado', 'cancelado'];
+
+export function PedidoList({ pedidos, loading, error, onEdit, onDelete, onChangeEstado }: Props) {
   if (loading) return <p className={styles.muted}>Cargando pedidos…</p>;
   if (error) return <p className={styles.error}>Error: {error}</p>;
   if (pedidos.length === 0) return <p className={styles.muted}>No hay pedidos. Crea el primero.</p>;
@@ -23,6 +28,7 @@ export function PedidoList({ pedidos, loading, error }: Props) {
           <th>Items</th>
           <th>Total</th>
           <th>Estado</th>
+          <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -52,6 +58,24 @@ export function PedidoList({ pedidos, loading, error }: Props) {
               <span className={styles.estado} data-estado={p.estado}>
                 {p.estado}
               </span>
+            </td>
+            <td className={styles.actions}>
+              <select
+                className={styles.estadoSelect}
+                value={p.estado}
+                onChange={(e) => onChangeEstado(p.id, e.target.value as EstadoPedido)}
+                aria-label="Cambiar estado del pedido"
+              >
+                {ESTADOS.map((est) => (
+                  <option key={est} value={est}>
+                    {est}
+                  </option>
+                ))}
+              </select>
+              <button onClick={() => onEdit(p)}>Editar</button>
+              <button className="danger" onClick={() => onDelete(p.id)}>
+                Eliminar
+              </button>
             </td>
           </tr>
         ))}
