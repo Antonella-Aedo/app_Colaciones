@@ -2,14 +2,18 @@ import { useState } from 'react';
 import { usePedidos } from '../hooks/usePedidos';
 import { useProductos } from '../hooks/useProductos';
 import { useColaciones } from '../hooks/useColaciones';
+import { useClientes } from '../hooks/useClientes';
 import { PedidoList } from '../components/PedidoList';
 import { PedidoForm } from '../components/PedidoForm';
+import { PageHeader } from '../components/PageHeader';
 import type { EstadoPedido, Pedido, PedidoInput } from '../types';
+import styles from './PedidosPage.module.css';
 
 export function PedidosPage() {
-  const { pedidos, loading, error, create, update, remove, changeEstado } = usePedidos();
+  const { pedidos, loading, error, create, update, remove, changeEstado, confirmarPago, verificarDireccion } = usePedidos();
   const { productos } = useProductos();
   const { colaciones } = useColaciones();
+  const { clientes } = useClientes();
   const [mostrandoForm, setMostrandoForm] = useState(false);
   const [editando, setEditando] = useState<Pedido | null>(null);
 
@@ -37,22 +41,39 @@ export function PedidosPage() {
     void changeEstado(id, estado);
   };
 
+  const handleConfirmarPago = (id: string) => {
+    void confirmarPago(id);
+  };
+
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h2 style={{ margin: 0 }}>Pedidos</h2>
-        {!mostrandoForm && (
-          <button className="primary" onClick={() => setMostrandoForm(true)}>Nuevo pedido</button>
-        )}
-      </div>
+      <PageHeader
+        titulo="Pedidos"
+        descripcion="Tablero por estado: cada pedido avanza de Creado a Entregado siguiendo las transiciones válidas."
+        acciones={
+          !mostrandoForm && (
+            <button
+              className="primary"
+              onClick={() => {
+                setEditando(null);
+                setMostrandoForm(true);
+              }}
+            >
+              Nuevo pedido
+            </button>
+          )
+        }
+      />
 
       {mostrandoForm && (
-        <div style={{ marginBottom: '1.5rem' }}>
+        <div className={styles.formWrapper}>
           <PedidoForm
             inicial={editando}
             productos={productos}
             colaciones={colaciones}
+            clientes={clientes}
             onSubmit={handleSubmit}
+            onVerificarDireccion={verificarDireccion}
             onCancel={() => {
               setMostrandoForm(false);
               setEditando(null);
@@ -68,6 +89,7 @@ export function PedidosPage() {
         onEdit={handleEdit}
         onDelete={handleDelete}
         onChangeEstado={handleChangeEstado}
+        onConfirmarPago={handleConfirmarPago}
       />
     </div>
   );

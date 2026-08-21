@@ -43,9 +43,39 @@ export const ColacionSchema = z.object({
 // ColacionInput = Omit<Colacion, 'id'>
 export const ColacionInputSchema = ColacionSchema.omit({ id: true });
 
+// === Clientes ===
+
+export const ClienteSchema = z.object({
+  id: z.string().min(1),
+  direccion: z.string().min(1, 'direccion es requerida'),
+  contacto: z.string().min(1, 'contacto es requerido'),
+  nombre: z.string().nullable().optional(),
+});
+
+export const ClienteInputSchema = ClienteSchema.omit({ id: true });
+
 // === Pedidos ===
 
-export const EstadoPedidoSchema = z.enum(['pendiente', 'entregado', 'cancelado']);
+export const EstadoPedidoSchema = z.enum([
+  'creado',
+  'pagado',
+  'programado',
+  'entregando',
+  'entregado',
+  'cancelado',
+]);
+
+export const TipoEntregaSchema = z.enum(['delivery', 'retiro']);
+
+export const MetodoPagoSchema = z.enum(['efectivo', 'tarjeta', 'transferencia']);
+
+export const EstadoPagoSchema = z.enum(['pendiente', 'pagado']);
+
+export const CambioEstadoSchema = z.object({
+  estado: EstadoPedidoSchema,
+  cambiadoPor: z.string().min(1),
+  cambiadoEn: z.string().min(1),
+});
 
 // rol de PedidoItem admite los roles de colación + 'bebida' | 'crema'
 export const PedidoItemRolSchema = z.enum([
@@ -71,17 +101,33 @@ export const PedidoItemSchema = z.object({
 export const PedidoSchema = z.object({
   id: z.string().min(1),
   fecha: z.string().min(1, 'fecha es requerida'),
-  cliente: z.string().min(1, 'cliente es requerido'),
+  clienteId: z.string().min(1, 'clienteId es requerido'),
+  clienteNombre: z.string().nullable(),
+  clienteDireccion: z.string().min(1, 'clienteDireccion es requerido'),
+  clienteContacto: z.string().min(1, 'clienteContacto es requerido'),
   registradoPor: z.string().min(1, 'registradoPor es requerido'),
   colacionId: z.string().nullable(),
   items: z.array(PedidoItemSchema).min(1, 'items debe tener al menos un elemento'),
   total: z.number().min(0, 'total debe ser >= 0'),
   estado: EstadoPedidoSchema,
+  tipoEntrega: TipoEntregaSchema,
+  deliveryCost: z.number().min(0, 'deliveryCost debe ser >= 0'),
+  metodoPago: MetodoPagoSchema,
+  estadoPago: EstadoPagoSchema,
+  // Campos de auditoría opcionales (no presentes en create, sí en update/cambiarEstado)
+  estadoActualizadoPor: z.string().optional(),
+  estadoActualizadoEn: z.string().optional(),
+  historialEstados: z.array(CambioEstadoSchema).optional(),
 });
 
-// PedidoInput = Omit<Pedido, 'id' | 'estado'> & { estado?: EstadoPedido }
-// estado es opcional en el input (createPedido lo defaultea a 'pendiente',
+// PedidoInput = Omit<Pedido, 'id' | 'estado' | 'estadoActualizadoPor' | 'estadoActualizadoEn' | 'historialEstados'>
+//   & { estado?: EstadoPedido }
+// estado es opcional en el input (createPedido lo defaultea a 'creado',
 // updatePedido preserva el estado existente si no se provee).
-export const PedidoInputSchema = PedidoSchema.omit({ id: true, estado: true }).extend({
+// Los campos de auditoría NO van en el input (se gestionan via cambiarEstadoPedido).
+export const PedidoInputSchema = PedidoSchema.omit({
+  id: true,
+  estado: true,
+}).extend({
   estado: EstadoPedidoSchema.optional(),
 });

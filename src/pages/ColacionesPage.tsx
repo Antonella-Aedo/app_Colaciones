@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useColaciones } from '../hooks/useColaciones';
 import { useProductos } from '../hooks/useProductos';
 import { ColacionForm } from '../components/ColacionForm';
+import { PageHeader } from '../components/PageHeader';
 import { ColacionList } from '../components/ColacionList';
 import type { Colacion, ColacionInput } from '../types';
 
@@ -61,15 +62,20 @@ export function ColacionesPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h2 style={{ margin: 0 }}>Colaciones / Menú del día</h2>
-        {!mostrandoForm && (
-          <button className="primary" onClick={nuevo}>Nueva colación</button>
-        )}
-      </div>
+      <PageHeader
+        titulo="Colaciones"
+        descripcion="El menú del día: fondo, agregado y ensalada armados como una bandeja. Solo una colación puede estar activa a la vez."
+        acciones={
+          !mostrandoForm && (
+            <button className="primary" onClick={nuevo}>
+              Nueva colación
+            </button>
+          )
+        }
+      />
 
       {mostrandoForm && (
-        <div style={{ marginBottom: '1.5rem' }}>
+        <div style={{ marginBottom: 'var(--space-6)' }}>
           <ColacionForm
             productos={productos}
             inicial={editando}

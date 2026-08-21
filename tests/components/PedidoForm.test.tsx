@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import '../helpers/mockFirestore';
 import { PedidoForm } from '../../src/components/PedidoForm';
-import type { Producto, Colacion, Pedido, PedidoInput } from '../../src/types';
+import type { Producto, Colacion, Pedido, PedidoInput, Cliente } from '../../src/types';
 
 const productos: Producto[] = [
   { id: 'f1', nombre: 'Pescado frito', descripcion: '', precio: 6500, categoria: 'fondo', disponible: true },
@@ -25,31 +25,51 @@ const colaciones: Colacion[] = [
   },
 ];
 
+const clientes: Cliente[] = [
+  { id: 'cli-1', direccion: 'Padre Hurtado 123', contacto: '+56912345678', nombre: 'Juan' },
+  { id: 'cli-2', direccion: 'Padre Hurtado 456', contacto: '+56987654321', nombre: 'María' },
+];
+
 beforeEach(() => {
   vi.stubEnv('VITE_FIREBASE_CONFIG', '{"projectId":"test"}');
 });
 
 describe('PedidoForm', () => {
   it('muestra personalización de agregado/ensalada cuando el rol es fondo (por defecto)', () => {
-    render(<PedidoForm productos={productos} colaciones={colaciones} onSubmit={vi.fn()} onCancel={vi.fn()} />);
-    // el rol por defecto es 'fondo', así que la personalización aparece
+    render(
+      <PedidoForm
+        productos={productos}
+        colaciones={colaciones}
+        clientes={clientes}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
     expect(screen.getByText('Personalización del fondo:')).toBeDefined();
   });
 
   it('precarga items desde una colación', async () => {
     const onSubmit = vi.fn(async (_input: PedidoInput): Promise<void> => {});
-    render(<PedidoForm productos={productos} colaciones={colaciones} onSubmit={onSubmit} onCancel={vi.fn()} />);
+    render(
+      <PedidoForm
+        productos={productos}
+        colaciones={colaciones}
+        clientes={clientes}
+        onSubmit={onSubmit}
+        onCancel={vi.fn()}
+      />,
+    );
 
-    // seleccionar colación en el select de precarga
     const selectPrecarga = screen.getByLabelText(/Precargar desde colación/);
     fireEvent.change(selectPrecarga, { target: { value: 'c1' } });
 
-    // los items de la colación aparecen (pueden estar en el select y en la lista)
     expect(screen.getAllByText(/Pescado frito/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Arroz/).length).toBeGreaterThan(0);
 
-    // llenar cliente y enviar
-    fireEvent.change(screen.getByLabelText(/Cliente/), { target: { value: 'Juan' } });
+    // seleccionar cliente
+    const selectCliente = screen.getByLabelText(/Cliente/);
+    fireEvent.change(selectCliente, { target: { value: 'cli-1' } });
+
     await act(async () => {
       fireEvent.click(screen.getByText('Guardar pedido'));
     });
@@ -57,9 +77,10 @@ describe('PedidoForm', () => {
     const input = onSubmit.mock.calls[0][0] as PedidoInput;
     expect(input.colacionId).toBe('c1');
     expect(input.items).toHaveLength(2);
+    expect(input.clienteId).toBe('cli-1');
   });
 
-  it('precarga las notas de los items de la colación en el campo notas (no nota)', async () => {
+  it('precarga las notas de los items de la colación en el campo notas', async () => {
     const colacionesConNotas: Colacion[] = [
       {
         id: 'c-notas',
@@ -75,14 +96,22 @@ describe('PedidoForm', () => {
     ];
 
     const onSubmit = vi.fn(async (_input: PedidoInput): Promise<void> => {});
-    render(<PedidoForm productos={productos} colaciones={colacionesConNotas} onSubmit={onSubmit} onCancel={vi.fn()} />);
+    render(
+      <PedidoForm
+        productos={productos}
+        colaciones={colacionesConNotas}
+        clientes={clientes}
+        onSubmit={onSubmit}
+        onCancel={vi.fn()}
+      />,
+    );
 
-    // seleccionar colación en el select de precarga
     const selectPrecarga = screen.getByLabelText(/Precargar desde colación/);
     fireEvent.change(selectPrecarga, { target: { value: 'c-notas' } });
 
-    // llenar cliente y enviar
-    fireEvent.change(screen.getByLabelText(/Cliente/), { target: { value: 'Juan' } });
+    const selectCliente = screen.getByLabelText(/Cliente/);
+    fireEvent.change(selectCliente, { target: { value: 'cli-1' } });
+
     await act(async () => {
       fireEvent.click(screen.getByText('Guardar pedido'));
     });
@@ -90,17 +119,44 @@ describe('PedidoForm', () => {
 
     const input = onSubmit.mock.calls[0][0] as PedidoInput;
     expect(input.items).toHaveLength(2);
-    // cada item precargado debe conservar su nota en el campo `notas` (plural)
     expect(input.items[0].notas).toBe('sin cebolla');
     expect(input.items[1].notas).toBe('porción doble');
   });
 
   it('no permite enviar sin items', async () => {
     const onSubmit = vi.fn();
-    render(<PedidoForm productos={productos} colaciones={colaciones} onSubmit={onSubmit} onCancel={vi.fn()} />);
-    fireEvent.change(screen.getByLabelText(/Cliente/), { target: { value: 'Juan' } });
+    render(
+      <PedidoForm
+        productos={productos}
+        colaciones={colaciones}
+        clientes={clientes}
+        onSubmit={onSubmit}
+        onCancel={vi.fn()}
+      />,
+    );
+    const selectCliente = screen.getByLabelText(/Cliente/);
+    fireEvent.change(selectCliente, { target: { value: 'cli-1' } });
     fireEvent.click(screen.getByText('Guardar pedido'));
     await vi.waitFor(() => expect(screen.getByText('Agrega al menos un item')).toBeDefined());
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('no permite enviar sin seleccionar cliente', async () => {
+    const onSubmit = vi.fn();
+    render(
+      <PedidoForm
+        productos={productos}
+        colaciones={colaciones}
+        clientes={clientes}
+        onSubmit={onSubmit}
+        onCancel={vi.fn()}
+      />,
+    );
+    // agregar item sin seleccionar cliente
+    fireEvent.change(screen.getByDisplayValue('— Producto —'), { target: { value: 'f1' } });
+    fireEvent.click(screen.getByText('Agregar'));
+    fireEvent.click(screen.getByText('Guardar pedido'));
+    await vi.waitFor(() => expect(screen.getByText(/cliente es obligatorio/i)).toBeDefined());
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
@@ -110,34 +166,78 @@ describe('PedidoForm', () => {
       { id: 't2', nombre: 'Producto 1000', descripcion: '', precio: 1000, categoria: 'bebida', disponible: true },
     ];
     const onSubmit = vi.fn(async (_input: PedidoInput): Promise<void> => {});
-    render(<PedidoForm productos={productosTotal} colaciones={[]} onSubmit={onSubmit} onCancel={vi.fn()} />);
+    render(
+      <PedidoForm
+        productos={productosTotal}
+        colaciones={[]}
+        clientes={clientes}
+        onSubmit={onSubmit}
+        onCancel={vi.fn()}
+      />,
+    );
 
-    // Item 1: precio=1500, cantidad=2 → 3000
     fireEvent.change(screen.getByDisplayValue('— Producto —'), { target: { value: 't1' } });
     fireEvent.change(screen.getByRole('spinbutton'), { target: { value: 2 } });
     fireEvent.click(screen.getByText('Agregar'));
 
-    // Item 2: precio=1000, cantidad=1 → 1000
     fireEvent.change(screen.getByDisplayValue('— Producto —'), { target: { value: 't2' } });
     fireEvent.click(screen.getByText('Agregar'));
 
-    // Llenar cliente y enviar
-    fireEvent.change(screen.getByLabelText(/Cliente/), { target: { value: 'Juan' } });
+    const selectCliente = screen.getByLabelText(/Cliente/);
+    fireEvent.change(selectCliente, { target: { value: 'cli-1' } });
+
     await act(async () => {
       fireEvent.click(screen.getByText('Guardar pedido'));
     });
     await vi.waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
 
     const input = onSubmit.mock.calls[0][0] as PedidoInput;
-    // Σ precio × cantidad = 1500×2 + 1000×1 = 4000
+    // Σ precio × cantidad = 1500×2 + 1000×1 = 4000 (retiro por defecto, sin delivery)
     expect(input.total).toBe(4000);
+  });
+
+  it('suma delivery al total cuando tipoEntrega=delivery', async () => {
+    const onSubmit = vi.fn(async (_input: PedidoInput): Promise<void> => {});
+    render(
+      <PedidoForm
+        productos={productos}
+        colaciones={[]}
+        clientes={clientes}
+        onSubmit={onSubmit}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    fireEvent.change(screen.getByDisplayValue('— Producto —'), { target: { value: 'f1' } });
+    fireEvent.click(screen.getByText('Agregar'));
+
+    const selectCliente = screen.getByLabelText(/Cliente/);
+    fireEvent.change(selectCliente, { target: { value: 'cli-1' } });
+
+    // seleccionar delivery
+    const radioDelivery = screen.getByLabelText(/Delivery/i);
+    fireEvent.click(radioDelivery);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Guardar pedido'));
+    });
+    await vi.waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+
+    const input = onSubmit.mock.calls[0][0] as PedidoInput;
+    expect(input.tipoEntrega).toBe('delivery');
+    expect(input.deliveryCost).toBe(1300);
+    // 6500 (fondo) + 1300 (delivery) = 7800
+    expect(input.total).toBe(7800);
   });
 
   it('precarga datos cuando se proporciona inicial (modo edición)', () => {
     const inicial: Pedido = {
       id: 'p1',
       fecha: '2026-08-19',
-      cliente: 'María González',
+      clienteId: 'cli-1',
+      clienteNombre: 'María González',
+      clienteDireccion: 'Padre Hurtado 123',
+      clienteContacto: '+56912345678',
       registradoPor: 'Ana',
       colacionId: null,
       items: [
@@ -160,7 +260,11 @@ describe('PedidoForm', () => {
         },
       ],
       total: 13800,
-      estado: 'pendiente',
+      estado: 'creado',
+      tipoEntrega: 'retiro',
+      deliveryCost: 0,
+      metodoPago: 'efectivo',
+      estadoPago: 'pendiente',
     };
 
     act(() => {
@@ -168,6 +272,7 @@ describe('PedidoForm', () => {
         <PedidoForm
           productos={productos}
           colaciones={colaciones}
+          clientes={clientes}
           inicial={inicial}
           onSubmit={vi.fn()}
           onCancel={vi.fn()}
@@ -175,14 +280,9 @@ describe('PedidoForm', () => {
       );
     });
 
-    // el título refleja modo edición
     expect(screen.getByText('Editar pedido')).toBeDefined();
-    // el cliente se precarga en el input
-    expect((screen.getByLabelText(/Cliente/) as HTMLInputElement).value).toBe('María González');
-    // los items precargados aparecen en la lista
     expect(screen.getAllByText(/Pescado frito/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Coca-Cola/).length).toBeGreaterThan(0);
-    // el botón de envío refleja modo edición
     expect(screen.getByText('Guardar cambios')).toBeDefined();
   });
 });

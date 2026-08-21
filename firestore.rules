@@ -5,7 +5,7 @@ service cloud.firestore {
     // =====================================================================
     // REGLAS DE FIRESTORE — app_Colaciones
     // =====================================================================
-    // Colecciones: productos, colaciones, pedidos
+    // Colecciones: productos, colaciones, clientes, pedidos, usuariosPermitidos
     //
     // Tres modos de operación (SOLO UNO activo a la vez):
     //
@@ -79,12 +79,15 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Verifica que el usuario sea administrador.
-    // TODO post-MVP: añadir verificación de rol admin real, p.ej.:
-    //   return isSignedIn() && request.auth.token.admin == true;
-    //   o consultar un documento en /admins/{uid}.
+    // Verifica que el usuario sea administrador autorizado.
+    // Requiere: (1) sesión autenticada Y (2) exista un documento en
+    // /usuariosPermitidos con ID = email del usuario en minúsculas.
+    // Firestore Rules expone el email del usuario autenticado con Google
+    // en request.auth.token.email; .lowercase() normaliza para coincidir
+    // con los doc IDs (que se guardan en minúsculas).
     function isAuthedAdmin() {
-      return isSignedIn();
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/usuariosPermitidos/$(request.auth.token.email.lowercase()));
     }
 
     // ---------------------------------------------------------------------
@@ -152,21 +155,68 @@ service cloud.firestore {
     }
 
     // ---------------------------------------------------------------------
-    // Validación — pedidos
+    // Validación — clientes
     // ---------------------------------------------------------------------
     // Esquema:
-    //   fecha:          string (ISO yyyy-MM-dd)
-    //   cliente:        string, no vacío
-    //   registradoPor:  string
-    //   colacionId:     string | null (opcional)
-    //   items:          list (array de PedidoItem)
-    //   total:          number, >= 0
-    //   estado:         string, uno de: pendiente | entregado | cancelado
-    // Allowlist: [fecha, cliente, registradoPor, colacionId, items, total, estado]
+    //   direccion: string, no vacío
+    //   contacto:  string, no vacío
+    //   nombre:    string | null (opcional)
+    // Allowlist: [direccion, contacto, nombre]
+
+    function clienteValido() {
+      let data = request.resource.data;
+      return hasOnlyFields(data, ['direccion', 'contacto', 'nombre'])
+        && nonEmptyStr(data.direccion)
+        && nonEmptyStr(data.contacto)
+        && (data.nombre == null || isString(data.nombre));
+    }
+
+    // ---------------------------------------------------------------------
+    // Validación — pedidos
+    // ---------------------------------------------------------------------
+    // Esquema (modelo nuevo de Pedido):
+    //   fecha:                 string (ISO yyyy-MM-dd)
+    //   clienteId:             string, no vacío
+    //   clienteNombre:         string | null (opcional, puede ser null)
+    //   clienteDireccion:      string, no vacío
+    //   clienteContacto:       string, no vacío
+    //   registradoPor:         string
+    //   colacionId:            string | null (opcional)
+    //   items:                 list (array de PedidoItem)
+    //   total:                 number, >= 0
+    //   estado:                string, uno de:
+    //                            creado | pagado | programado |
+    //                            entregando | entregado | cancelado
+    //   tipoEntrega:           string, uno de: delivery | retiro
+    //   deliveryCost:          number, >= 0
+    //   metodoPago:            string, uno de: efectivo | tarjeta | transferencia
+    //   estadoPago:            string, uno de: pendiente | pagado
+    //   estadoActualizadoPor:  string (opcional en create)
+    //   estadoActualizadoEn:   string (opcional en create)
+    //   historialEstados:      list (opcional en create)
+    // Allowlist (todos los campos):
+    //   [fecha, clienteId, clienteNombre, clienteDireccion, clienteContacto,
+    //    registradoPor, colacionId, items, total, estado, tipoEntrega,
+    //    deliveryCost, metodoPago, estadoPago, estadoActualizadoPor,
+    //    estadoActualizadoEn, historialEstados]
 
     function isValidEstado(v) {
       return isString(v)
-        && (v == 'pendiente' || v == 'entregado' || v == 'cancelado');
+        && (v == 'creado' || v == 'pagado' || v == 'programado'
+          || v == 'entregando' || v == 'entregado' || v == 'cancelado');
+    }
+
+    function isValidTipoEntrega(v) {
+      return isString(v) && (v == 'delivery' || v == 'retiro');
+    }
+
+    function isValidMetodoPago(v) {
+      return isString(v)
+        && (v == 'efectivo' || v == 'tarjeta' || v == 'transferencia');
+    }
+
+    function isValidEstadoPago(v) {
+      return isString(v) && (v == 'pendiente' || v == 'pagado');
     }
 
     function pedidoValido() {
@@ -174,15 +224,35 @@ service cloud.firestore {
       // TODO post-MVP: exigir que data.registradoPor == request.auth.uid
       //   (los datos existentes tienen texto libre; alinear primero la app
       //   para que escriba el uid del usuario autenticado).
-      return hasOnlyFields(data, ['fecha', 'cliente', 'registradoPor', 'colacionId', 'items', 'total', 'estado'])
+      // Campos de auditoría (estadoActualizadoPor, estadoActualizadoEn,
+      // historialEstados) son opcionales en create: pueden estar presentes
+      // o no. Por eso se incluyen en el allowlist pero se validan como
+      // opcionales (isStrOrNull / isListOrNull).
+      return hasOnlyFields(data, [
+          'fecha', 'clienteId', 'clienteNombre', 'clienteDireccion',
+          'clienteContacto', 'registradoPor', 'colacionId', 'items', 'total',
+          'estado', 'tipoEntrega', 'deliveryCost', 'metodoPago', 'estadoPago',
+          'estadoActualizadoPor', 'estadoActualizadoEn', 'historialEstados'
+        ])
         && isString(data.fecha)
-        && nonEmptyStr(data.cliente)
+        && nonEmptyStr(data.clienteId)
+        && isStrOrNull(data.clienteNombre)
+        && nonEmptyStr(data.clienteDireccion)
+        && nonEmptyStr(data.clienteContacto)
         && isString(data.registradoPor)
         && isStrOrNull(data.colacionId)
         && isList(data.items)
         && isNumber(data.total)
         && data.total >= 0
-        && isValidEstado(data.estado);
+        && isValidEstado(data.estado)
+        && isValidTipoEntrega(data.tipoEntrega)
+        && isNumber(data.deliveryCost)
+        && data.deliveryCost >= 0
+        && isValidMetodoPago(data.metodoPago)
+        && isValidEstadoPago(data.estadoPago)
+        && isStrOrNull(data.estadoActualizadoPor)
+        && isStrOrNull(data.estadoActualizadoEn)
+        && (data.historialEstados == null || isList(data.historialEstados));
     }
 
     // ---------------------------------------------------------------------
@@ -217,14 +287,31 @@ service cloud.firestore {
     }
 
     // ---------------------------------------------------------------------
+    // Reglas de colección — clientes
+    // ---------------------------------------------------------------------
+    // CRUD igual a productos: read/write con isAuthedAdmin + validación.
+
+    match /clientes/{clienteId} {
+      allow read:   if isAuthedAdmin();
+      allow create: if isAuthedAdmin() && clienteValido();
+      allow update: if isAuthedAdmin() && clienteValido();
+      allow delete: if isAuthedAdmin();
+    }
+
+    // ---------------------------------------------------------------------
     // Reglas de colección — pedidos
     // ---------------------------------------------------------------------
+    // Req 5: una vez que un pedido está 'entregado' no puede editarse ni
+    // eliminarse (bloqueo a nivel de reglas; la app también debe ocultar
+    // las acciones de edición/borrado en ese estado).
 
     match /pedidos/{pedidoId} {
       allow read:   if isAuthedAdmin();
       allow create: if isAuthedAdmin() && pedidoValido();
-      allow update: if isAuthedAdmin() && pedidoValido();
-      allow delete: if isAuthedAdmin();
+      allow update: if isAuthedAdmin() && pedidoValido()
+        && resource.data.estado != 'entregado';  // no editar si entregado
+      allow delete: if isAuthedAdmin()
+        && resource.data.estado != 'entregado';  // no eliminar si entregado
     }
 
     // ---------------------------------------------------------------------
@@ -232,12 +319,19 @@ service cloud.firestore {
     // ---------------------------------------------------------------------
     // Lista de emails autorizados para acceder a la app.
     // Cada documento tiene como ID el email en minúsculas.
-    // Cualquier usuario autenticado puede leer (para verificar su propia
-    // autorización). Solo usuarios autenticados pueden escribir
-    // (TODO post-MVP: restringir escritura a un rol admin específico).
+    // Lectura: cualquier usuario autenticado puede leer. Esto es necesario
+    //   porque isAuthedAdmin() usa exists() sobre esta colección, y
+    //   Firestore evalúa los permisos de lectura del documento objetivo
+    //   dentro de exists(). Si la lectura exigiera isAuthedAdmin() se
+    //   crearía una dependencia circular (exists() siempre devolvería
+    //   false) y nadie podría autorizarse. Los datos son solo emails, no
+    //   información sensible.
+    // Escritura: requiere isAuthedAdmin() (solo admins ya autorizados
+    //   pueden añadir/quitar emails). El primer admin debe sembrarse
+    //   manualmente desde la consola de Firebase.
 
     match /usuariosPermitidos/{emailId} {
-      allow read:   if isAuthedAdmin();
+      allow read:   if isSignedIn();
       allow write:  if isAuthedAdmin();
     }
 

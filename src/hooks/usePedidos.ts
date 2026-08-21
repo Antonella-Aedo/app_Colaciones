@@ -4,10 +4,15 @@ import {
   createPedido as apiCreate,
   updatePedido as apiUpdate,
   deletePedido as apiDelete,
+  cambiarEstadoPedido as apiCambiarEstado,
+  confirmarPago as apiConfirmarPago,
+  verificarDireccionDuplicada as apiVerificarDir,
 } from '../api/pedidos';
 import type { EstadoPedido, Pedido, PedidoInput } from '../types';
+import { useAuth } from '../firebase/auth';
 
 export function usePedidos() {
+  const { user } = useAuth();
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,27 +53,46 @@ export function usePedidos() {
     setPedidos((prev) => prev.filter((p) => p.id !== id));
   }, []);
 
-  // Cambia solo el estado: reconstruye el PedidoInput desde el pedido en cache
-  // (updatePedido requiere todos los campos; estado es opcional en el schema).
+  // Cambia el estado con auditoría (registra quién/cuándo)
   const changeEstado = useCallback(
     async (id: string, estado: EstadoPedido) => {
-      const pedido = pedidos.find((p) => p.id === id);
-      if (!pedido) return;
-      const input: PedidoInput = {
-        fecha: pedido.fecha,
-        cliente: pedido.cliente,
-        registradoPor: pedido.registradoPor,
-        colacionId: pedido.colacionId,
-        items: pedido.items,
-        total: pedido.total,
-        estado,
-      };
-      const actualizado = await apiUpdate(id, input);
+      const email = user?.email ?? 'sistema';
+      const actualizado = await apiCambiarEstado(id, estado, email);
       setPedidos((prev) => prev.map((p) => (p.id === id ? actualizado : p)));
       return actualizado;
     },
-    [pedidos],
+    [user],
   );
 
-  return { pedidos, loading, error, refetch, create, update, remove, changeEstado };
+  // Confirma el pago de un pedido (métodos diferidos)
+  const confirmarPago = useCallback(
+    async (id: string) => {
+      const email = user?.email ?? 'sistema';
+      const actualizado = await apiConfirmarPago(id, email);
+      setPedidos((prev) => prev.map((p) => (p.id === id ? actualizado : p)));
+      return actualizado;
+    },
+    [user],
+  );
+
+  // Verifica si hay otro pedido con la misma dirección esa fecha (informativo)
+  const verificarDireccion = useCallback(
+    async (direccion: string, fecha: string, excludeId?: string) => {
+      return apiVerificarDir(direccion, fecha, excludeId);
+    },
+    [],
+  );
+
+  return {
+    pedidos,
+    loading,
+    error,
+    refetch,
+    create,
+    update,
+    remove,
+    changeEstado,
+    confirmarPago,
+    verificarDireccion,
+  };
 }

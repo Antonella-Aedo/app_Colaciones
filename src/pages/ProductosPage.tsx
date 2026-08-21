@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useProductos } from '../hooks/useProductos';
 import { ProductoList } from '../components/ProductoList';
 import { ProductoForm } from '../components/ProductoForm';
+import { PageHeader } from '../components/PageHeader';
 import type { Producto, ProductoInput } from '../types';
 import styles from './ProductosPage.module.css';
 
@@ -41,12 +42,17 @@ export function ProductosPage() {
 
   return (
     <div>
-      <div className={styles.header}>
-        <h2 className={styles.title}>Productos</h2>
-        {!mostrandoForm && (
-          <button className="primary" onClick={abrirNuevo}>Nuevo producto</button>
-        )}
-      </div>
+      <PageHeader
+        titulo="Productos"
+        descripcion="El catálogo, agrupado por categoría. Cada color viene del alimento: tomate, lechuga, choclo, betarraga, palta, agua."
+        acciones={
+          !mostrandoForm && (
+            <button className="primary" onClick={abrirNuevo}>
+              Nuevo producto
+            </button>
+          )
+        }
+      />
 
       {mostrandoForm && (
         <div className={styles.formWrapper}>

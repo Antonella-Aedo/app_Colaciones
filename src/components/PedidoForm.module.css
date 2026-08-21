@@ -30,6 +30,48 @@
   color: var(--color-muted);
 }
 
+.clienteInfo {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  color: var(--color-muted);
+  background: #f0f4ff;
+  padding: 0.5rem 0.7rem;
+  border-radius: var(--radius);
+  border-left: 3px solid #4472C4;
+}
+
+.entregaGroup {
+  border: 1px solid #e5e7eb;
+  border-radius: var(--radius);
+  padding: 0.7rem 0.9rem;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.entregaLegend {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  padding: 0 0.4rem;
+}
+
+.radioOption {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: inherit;
+  cursor: pointer;
+}
+
+.radioOption input[type='radio'] {
+  cursor: pointer;
+}
+
 .addItem {
   display: flex;
   gap: 0.5rem;
@@ -109,9 +151,17 @@
 }
 
 .total {
-  font-weight: 700;
-  font-size: 1.05rem;
-  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
+  font-size: 0.9rem;
+  color: var(--color-muted);
+}
+
+.total strong {
+  font-size: 1.1rem;
+  color: inherit;
 }
 
 .error {
@@ -132,4 +182,14 @@
   .cant {
     width: 100%;
   }
+}
+
+.aviso {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffc107;
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  margin: 0;
 }

@@ -1,25 +1,50 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type {
+  Cliente,
   Colacion,
+  EstadoPago,
+  MetodoPago,
   Pedido,
-  PedidoItem,
   PedidoInput,
+  PedidoItem,
   Producto,
   RolItem,
+  TipoEntrega,
 } from '../types';
+import { DELIVERY_COST, DELIVERY_ZONA } from '../constants/delivery';
 import { hoyISO } from '../utils/date';
 import styles from './PedidoForm.module.css';
 
 interface Props {
   productos: Producto[];
   colaciones: Colacion[];
+  clientes: Cliente[];
   inicial?: Pedido | null;
   onSubmit: (input: PedidoInput) => Promise<void>;
   onCancel: () => void;
+  /** Verifica si ya existe otro pedido con la misma dirección esa fecha. Retorna la lista de coincidencias. */
+  onVerificarDireccion?: (direccion: string, fecha: string, excludeId?: string) => Promise<Pedido[]>;
 }
 
-export function PedidoForm({ productos, colaciones, inicial, onSubmit, onCancel }: Props) {
-  const [cliente, setCliente] = useState(inicial?.cliente ?? '');
+export function PedidoForm({
+  productos,
+  colaciones,
+  clientes,
+  inicial,
+  onSubmit,
+  onCancel,
+  onVerificarDireccion,
+}: Props) {
+  const [clienteId, setClienteId] = useState<string>(inicial?.clienteId ?? '');
+  const [clienteNombre, setClienteNombre] = useState<string | null>(
+    inicial?.clienteNombre ?? null,
+  );
+  const [clienteDireccion, setClienteDireccion] = useState<string>(
+    inicial?.clienteDireccion ?? '',
+  );
+  const [clienteContacto, setClienteContacto] = useState<string>(
+    inicial?.clienteContacto ?? '',
+  );
   const [registradoPor, setRegistradoPor] = useState(inicial?.registradoPor ?? '');
   const [fecha, setFecha] = useState(inicial?.fecha ?? hoyISO());
   const [colacionId, setColacionId] = useState<string | null>(inicial?.colacionId ?? null);
@@ -30,8 +55,11 @@ export function PedidoForm({ productos, colaciones, inicial, onSubmit, onCancel 
   const [agregadoSel, setAgregadoSel] = useState('');
   const [ensaladaSel, setEnsaladaSel] = useState('');
   const [notas, setNotas] = useState('');
+  const [tipoEntrega, setTipoEntrega] = useState<TipoEntrega>(inicial?.tipoEntrega ?? 'retiro');
+  const [metodoPago, setMetodoPago] = useState<MetodoPago>(inicial?.metodoPago ?? 'efectivo');
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
+  const [avisoDireccion, setAvisoDireccion] = useState<string | null>(null);
 
   const disponibles = useMemo(() => productos.filter((p) => p.disponible), [productos]);
   const agregados = useMemo(() => productos.filter((p) => p.categoria === 'agregado'), [productos]);
@@ -43,10 +71,49 @@ export function PedidoForm({ productos, colaciones, inicial, onSubmit, onCancel 
   );
   const esFondo = rolSel === 'fondo';
 
-  const total = useMemo(
+  const subtotal = useMemo(
     () => items.reduce((acc, it) => acc + it.precio * it.cantidad, 0),
     [items],
   );
+  const deliveryCost = tipoEntrega === 'delivery' ? DELIVERY_COST : 0;
+  const total = subtotal + deliveryCost;
+
+  // Aviso informativo de dirección duplicada (solo para delivery).
+  // No bloquea el guardado ni altera el deliveryCost.
+  useEffect(() => {
+    let cancelado = false;
+    if (!onVerificarDireccion || !clienteDireccion || !fecha || tipoEntrega !== 'delivery') {
+      setAvisoDireccion(null);
+      return;
+    }
+    void onVerificarDireccion(clienteDireccion, fecha, inicial?.id).then((coincidencias) => {
+      if (cancelado) return;
+      if (coincidencias.length > 0) {
+        setAvisoDireccion(
+          `Ya existe${coincidencias.length > 1 ? `n ${coincidencias.length} pedidos` : ' 1 pedido'} con la misma dirección hoy. El delivery se cobra igual.`,
+        );
+      } else {
+        setAvisoDireccion(null);
+      }
+    });
+    return () => { cancelado = true; };
+  }, [clienteDireccion, fecha, tipoEntrega, inicial?.id, onVerificarDireccion]);
+
+  const seleccionarCliente = (id: string) => {
+    setClienteId(id);
+    if (!id) {
+      setClienteNombre(null);
+      setClienteDireccion('');
+      setClienteContacto('');
+      return;
+    }
+    const c = clientes.find((cl) => cl.id === id);
+    if (c) {
+      setClienteNombre(c.nombre ?? null);
+      setClienteDireccion(c.direccion);
+      setClienteContacto(c.contacto);
+    }
+  };
 
   const precargarColacion = (id: string) => {
     const col = colaciones.find((c) => c.id === id);
@@ -109,7 +176,7 @@ export function PedidoForm({ productos, colaciones, inicial, onSubmit, onCancel 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!cliente.trim()) {
+    if (!clienteId) {
       setError('El cliente es obligatorio');
       return;
     }
@@ -117,16 +184,25 @@ export function PedidoForm({ productos, colaciones, inicial, onSubmit, onCancel 
       setError('Agrega al menos un item');
       return;
     }
+    const estadoPago: EstadoPago = metodoPago === 'efectivo' ? 'pagado' : 'pendiente';
     setError(null);
     setGuardando(true);
     try {
       await onSubmit({
         fecha,
-        cliente: cliente.trim(),
+        clienteId,
+        clienteNombre,
+        clienteDireccion,
+        clienteContacto,
         registradoPor: registradoPor.trim(),
         colacionId,
         items,
         total,
+        tipoEntrega,
+        deliveryCost,
+        metodoPago,
+        estadoPago,
+        estado: inicial?.estado,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al guardar');
@@ -143,7 +219,17 @@ export function PedidoForm({ productos, colaciones, inicial, onSubmit, onCancel 
       <div className={styles.row}>
         <label className={styles.field}>
           Cliente *
-          <input value={cliente} onChange={(e) => setCliente(e.target.value)} />
+          <select
+            value={clienteId}
+            onChange={(e) => seleccionarCliente(e.target.value)}
+          >
+            <option value="">— Seleccionar cliente —</option>
+            {clientes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre ? c.nombre : c.direccion} · {c.contacto}
+              </option>
+            ))}
+          </select>
         </label>
         <label className={styles.field}>
           Registrado por
@@ -152,6 +238,55 @@ export function PedidoForm({ productos, colaciones, inicial, onSubmit, onCancel 
         <label className={styles.field}>
           Fecha
           <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+        </label>
+      </div>
+
+      {clienteId && (clienteDireccion || clienteContacto) && (
+        <div className={styles.clienteInfo}>
+          {clienteDireccion && <span>Dirección: {clienteDireccion}</span>}
+          {clienteContacto && <span>Contacto: {clienteContacto}</span>}
+        </div>
+      )}
+
+      <fieldset className={styles.entregaGroup}>
+        <legend className={styles.entregaLegend}>Tipo de entrega</legend>
+        <label className={styles.radioOption}>
+          <input
+            type="radio"
+            name="tipoEntrega"
+            value="delivery"
+            checked={tipoEntrega === 'delivery'}
+            onChange={() => setTipoEntrega('delivery')}
+          />
+          Delivery ({DELIVERY_ZONA}) — ${DELIVERY_COST.toLocaleString('es-CL')}
+        </label>
+        <label className={styles.radioOption}>
+          <input
+            type="radio"
+            name="tipoEntrega"
+            value="retiro"
+            checked={tipoEntrega === 'retiro'}
+            onChange={() => setTipoEntrega('retiro')}
+          />
+          Retiro en local — $0
+        </label>
+      </fieldset>
+
+      {avisoDireccion && (
+        <p className={styles.aviso} role="status">{avisoDireccion}</p>
+      )}
+
+      <div className={styles.row}>
+        <label className={styles.field}>
+          Método de pago
+          <select
+            value={metodoPago}
+            onChange={(e) => setMetodoPago(e.target.value as MetodoPago)}
+          >
+            <option value="efectivo">Efectivo</option>
+            <option value="tarjeta">Tarjeta</option>
+            <option value="transferencia">Transferencia</option>
+          </select>
         </label>
       </div>
 
@@ -256,7 +391,11 @@ export function PedidoForm({ productos, colaciones, inicial, onSubmit, onCancel 
         </ul>
       )}
 
-      <div className={styles.total}>Total: ${total.toLocaleString('es-CL')}</div>
+      <div className={styles.total}>
+        <span>Subtotal: ${subtotal.toLocaleString('es-CL')}</span>
+        {deliveryCost > 0 && <span>Delivery: ${deliveryCost.toLocaleString('es-CL')}</span>}
+        <strong>Total: ${total.toLocaleString('es-CL')}</strong>
+      </div>
 
       <div className={styles.actions}>
         <button type="submit" className="primary" disabled={guardando}>
@@ -267,4 +406,3 @@ export function PedidoForm({ productos, colaciones, inicial, onSubmit, onCancel 
     </form>
   );
 }
-

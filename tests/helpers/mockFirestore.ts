@@ -82,7 +82,19 @@ vi.mock('firebase/firestore', () => {
     },
     updateDoc: async (ref: FakeDocRef, data: Partial<DocData>) => {
       const col = getCollection(ref.col);
-      if (col.has(ref.id)) col.set(ref.id, { ...col.get(ref.id)!, ...data });
+      if (!col.has(ref.id)) return;
+      const existing = col.get(ref.id)!;
+      const merged: DocData = { ...existing };
+      for (const [key, value] of Object.entries(data)) {
+        // Detectar arrayUnion y concatenar al array existente
+        if (value && typeof value === 'object' && '__arrayUnion' in value) {
+          const arr = Array.isArray(existing[key]) ? existing[key] as unknown[] : [];
+          merged[key] = [...arr, ...(value as { __arrayUnion: true; elements: unknown[] }).elements];
+        } else {
+          merged[key] = value;
+        }
+      }
+      col.set(ref.id, merged);
     },
     deleteDoc: async (ref: FakeDocRef) => {
       getCollection(ref.col).delete(ref.id);
@@ -103,12 +115,29 @@ vi.mock('firebase/firestore', () => {
         update: (ref: FakeDocRef, data: Partial<DocData>) => {
           ops.push(() => {
             const col = getCollection(ref.col);
-            if (col.has(ref.id)) col.set(ref.id, { ...col.get(ref.id)!, ...data });
+            if (!col.has(ref.id)) return;
+            const existing = col.get(ref.id)!;
+            const merged: DocData = { ...existing };
+            for (const [key, value] of Object.entries(data)) {
+              if (value && typeof value === 'object' && '__arrayUnion' in value) {
+                const arr = Array.isArray(existing[key]) ? existing[key] as unknown[] : [];
+                merged[key] = [...arr, ...(value as { __arrayUnion: true; elements: unknown[] }).elements];
+              } else {
+                merged[key] = value;
+              }
+            }
+            col.set(ref.id, merged);
           });
         },
         commit: async () => { ops.forEach((op) => op()); },
       };
     },
+    // arrayUnion: marca un valor para que updateDoc lo concatene al array existente.
+    // Se representa como un objeto con tag __arrayUnion; updateDoc lo detecta y concatena.
+    arrayUnion: (...elements: unknown[]): { __arrayUnion: true; elements: unknown[] } => ({
+      __arrayUnion: true,
+      elements,
+    }),
   };
 });
 

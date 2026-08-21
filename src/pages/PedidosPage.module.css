@@ -1,14 +1,6 @@
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.title {
-  margin: 0;
-}
+/* El encabezado vive ahora en components/PageHeader — una sola jerarquía
+   tipográfica para las cuatro páginas. */
 
 .formWrapper {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-6);
 }
