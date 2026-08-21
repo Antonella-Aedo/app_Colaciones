@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import type { Colacion, ColacionInput } from '../types';
+import { ColacionInputSchema } from './schemas';
 
 const COL = 'colaciones';
 
@@ -36,24 +37,26 @@ export async function getColacionActiva(): Promise<Colacion | null> {
 }
 
 export async function createColacion(input: ColacionInput): Promise<Colacion> {
+  const validado = ColacionInputSchema.parse(input);
   let ref: DocumentReference;
-  if (input.activa) {
+  if (validado.activa) {
     // desactivar las demás en batch (solo una activa a la vez)
     const batch = writeBatch(db);
     const q = query(collection(db, COL), where('activa', '==', true));
     const snap = await getDocs(q);
     snap.docs.forEach((d) => batch.update(d.ref, { activa: false }));
     ref = doc(collection(db, COL));
-    batch.set(ref, input);
+    batch.set(ref, validado);
     await batch.commit();
   } else {
-    ref = await addDoc(collection(db, COL), input);
+    ref = await addDoc(collection(db, COL), validado);
   }
-  return { id: ref.id, ...input };
+  return { id: ref.id, ...validado };
 }
 
 export async function updateColacion(id: string, input: ColacionInput): Promise<Colacion> {
-  if (input.activa) {
+  const validado = ColacionInputSchema.parse(input);
+  if (validado.activa) {
     // desactivar las demás (excluyendo esta)
     const batch = writeBatch(db);
     const q = query(collection(db, COL), where('activa', '==', true));
@@ -61,12 +64,12 @@ export async function updateColacion(id: string, input: ColacionInput): Promise<
     snap.docs.forEach((d) => {
       if (d.id !== id) batch.update(d.ref, { activa: false });
     });
-    batch.set(doc(db, COL, id), input);
+    batch.set(doc(db, COL, id), validado);
     await batch.commit();
   } else {
-    await setDoc(doc(db, COL, id), input);
+    await setDoc(doc(db, COL, id), validado);
   }
-  return { id, ...input };
+  return { id, ...validado };
 }
 
 export async function deleteColacion(id: string): Promise<{ id: string }> {

@@ -42,3 +42,21 @@ describe('api/productos (Firestore)', () => {
     expect(lista).toHaveLength(0);
   });
 });
+
+describe('api/productos (validación runtime)', () => {
+  it('createProducto rechaza precio negativo', async () => {
+    const invalido = { ...productoInput, precio: -100 };
+    await expect(createProducto(invalido)).rejects.toThrow();
+  });
+
+  it('createProducto rechaza nombre vacío', async () => {
+    const invalido = { ...productoInput, nombre: '' };
+    await expect(createProducto(invalido)).rejects.toThrow();
+  });
+
+  it('updateProducto rechaza precio negativo', async () => {
+    const creado = await createProducto(productoInput);
+    const invalido = { ...productoInput, precio: -1 };
+    await expect(updateProducto(creado.id, invalido)).rejects.toThrow();
+  });
+});

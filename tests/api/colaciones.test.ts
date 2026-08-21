@@ -59,3 +59,24 @@ describe('api/colaciones (Firestore)', () => {
     expect(lista[0].activa).toBe(true);
   });
 });
+
+describe('api/colaciones (validación runtime)', () => {
+  it('createColacion rechaza items vacío', async () => {
+    const invalido = { ...colacionInput, items: [] };
+    await expect(createColacion(invalido)).rejects.toThrow();
+  });
+
+  it('createColacion rechaza rol de item inválido', async () => {
+    const invalido = {
+      ...colacionInput,
+      items: [{ productoId: 'p1', rol: 'invalido' as never, orden: 1 }],
+    };
+    await expect(createColacion(invalido)).rejects.toThrow();
+  });
+
+  it('updateColacion rechaza items vacío', async () => {
+    const creado = await createColacion(colacionInput);
+    const invalido = { ...colacionInput, items: [] };
+    await expect(updateColacion(creado.id, invalido)).rejects.toThrow();
+  });
+});

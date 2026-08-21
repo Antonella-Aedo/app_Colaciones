@@ -8,6 +8,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import type { Producto, ProductoInput } from '../types';
+import { ProductoInputSchema } from './schemas';
 
 const COL = 'productos';
 
@@ -17,13 +18,15 @@ export async function getProductos(): Promise<Producto[]> {
 }
 
 export async function createProducto(producto: ProductoInput): Promise<Producto> {
-  const ref = await addDoc(collection(db, COL), producto);
-  return { id: ref.id, ...producto };
+  const validado = ProductoInputSchema.parse(producto);
+  const ref = await addDoc(collection(db, COL), validado);
+  return { id: ref.id, ...validado };
 }
 
 export async function updateProducto(id: string, producto: ProductoInput): Promise<Producto> {
-  await setDoc(doc(db, COL, id), producto);
-  return { id, ...producto };
+  const validado = ProductoInputSchema.parse(producto);
+  await setDoc(doc(db, COL, id), validado);
+  return { id, ...validado };
 }
 
 export async function deleteProducto(id: string): Promise<{ id: string }> {

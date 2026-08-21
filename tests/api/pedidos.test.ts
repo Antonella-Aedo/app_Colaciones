@@ -68,3 +68,26 @@ describe('api/pedidos (Firestore)', () => {
     expect(persistido?.estado).toBe('cancelado');
   });
 });
+
+describe('api/pedidos (validación runtime)', () => {
+  it('createPedido rechaza estado fuera del enum', async () => {
+    const invalido = { ...pedidoInput, estado: 'invalido' as never };
+    await expect(createPedido(invalido)).rejects.toThrow();
+  });
+
+  it('createPedido rechaza total negativo', async () => {
+    const invalido = { ...pedidoInput, total: -500 };
+    await expect(createPedido(invalido)).rejects.toThrow();
+  });
+
+  it('createPedido rechaza items vacío', async () => {
+    const invalido = { ...pedidoInput, items: [] };
+    await expect(createPedido(invalido)).rejects.toThrow();
+  });
+
+  it('updatePedido rechaza estado fuera del enum', async () => {
+    const creado = await createPedido(pedidoInput);
+    const invalido = { ...pedidoInput, estado: 'foo' as never };
+    await expect(updatePedido(creado.id, invalido)).rejects.toThrow();
+  });
+});
