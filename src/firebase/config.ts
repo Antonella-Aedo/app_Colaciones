@@ -13,5 +13,9 @@ function getConfig(): FirebaseOptions {
   }
 }
 
-const app = initializeApp(getConfig());
+export const app = initializeApp(getConfig());
 export const db = getFirestore(app);
+
+// Inicializa App Check como side-effect al cargar la config de Firebase.
+// Si VITE_APPCHECK_RECAPTCHA_SITE_KEY no esta definida, se omite silenciosamente.
+import './appCheck';

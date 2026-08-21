@@ -23,9 +23,6 @@ export function PedidosPage() {
     setEditando(null);
   };
 
-  // TODO: PedidoForm aún no acepta una prop `inicial` para precargar datos en
-  // modo edición. Cuando se implemente, pasar `inicial={editando}` al formulario
-  // para que editar un pedido cargue sus valores actuales.
   const handleEdit = (p: Pedido) => {
     setEditando(p);
     setMostrandoForm(true);
@@ -52,6 +49,7 @@ export function PedidosPage() {
       {mostrandoForm && (
         <div style={{ marginBottom: '1.5rem' }}>
           <PedidoForm
+            inicial={editando}
             productos={productos}
             colaciones={colaciones}
             onSubmit={handleSubmit}
