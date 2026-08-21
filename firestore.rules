@@ -228,6 +228,20 @@ service cloud.firestore {
     }
 
     // ---------------------------------------------------------------------
+    // Reglas de colección — usuariosPermitidos
+    // ---------------------------------------------------------------------
+    // Lista de emails autorizados para acceder a la app.
+    // Cada documento tiene como ID el email en minúsculas.
+    // Cualquier usuario autenticado puede leer (para verificar su propia
+    // autorización). Solo usuarios autenticados pueden escribir
+    // (TODO post-MVP: restringir escritura a un rol admin específico).
+
+    match /usuariosPermitidos/{emailId} {
+      allow read:   if isAuthedAdmin();
+      allow write:  if isAuthedAdmin();
+    }
+
+    // ---------------------------------------------------------------------
     // Bloqueo por defecto — niega todo lo no contemplado arriba.
     // ---------------------------------------------------------------------
     // Cualquier colección no listada explícitamente queda inaccesible.

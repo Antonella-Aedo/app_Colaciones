@@ -3,7 +3,7 @@ import { useAuth } from '../firebase/auth';
 import styles from './LoginPage.module.css';
 
 export function LoginPage() {
-  const { loginWithGoogle } = useAuth();
+  const { loginWithGoogle, authError } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
@@ -24,6 +24,7 @@ export function LoginPage() {
       <div className={styles.form}>
         <h1 className={styles.title}>Colaciones — Iniciar sesión</h1>
         {error && <p className={styles.error} role="alert">{error}</p>}
+        {authError && <p className={styles.error} role="alert">{authError}</p>}
         <div className={styles.actions}>
           <button
             type="button"
