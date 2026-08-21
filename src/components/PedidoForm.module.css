@@ -77,6 +77,11 @@
   font-size: 0.8rem;
 }
 
+.rol {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+
 .personalizacion {
   display: flex;
   flex-direction: column;

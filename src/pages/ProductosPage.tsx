@@ -3,6 +3,7 @@ import { useProductos } from '../hooks/useProductos';
 import { ProductoList } from '../components/ProductoList';
 import { ProductoForm } from '../components/ProductoForm';
 import type { Producto, ProductoInput } from '../types';
+import styles from './ProductosPage.module.css';
 
 export function ProductosPage() {
   const { productos, loading, error, create, update, remove } = useProductos();
@@ -40,15 +41,15 @@ export function ProductosPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h2 style={{ margin: 0 }}>Productos</h2>
+      <div className={styles.header}>
+        <h2 className={styles.title}>Productos</h2>
         {!mostrandoForm && (
           <button className="primary" onClick={abrirNuevo}>Nuevo producto</button>
         )}
       </div>
 
       {mostrandoForm && (
-        <div style={{ marginBottom: '1.5rem' }}>
+        <div className={styles.formWrapper}>
           <ProductoForm inicial={editando} onSubmit={handleSubmit} onCancel={cerrarForm} />
         </div>
       )}

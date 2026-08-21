@@ -4,17 +4,40 @@ import { useProductos } from '../hooks/useProductos';
 import { useColaciones } from '../hooks/useColaciones';
 import { PedidoList } from '../components/PedidoList';
 import { PedidoForm } from '../components/PedidoForm';
-import type { PedidoInput } from '../types';
+import type { EstadoPedido, Pedido, PedidoInput } from '../types';
 
 export function PedidosPage() {
-  const { pedidos, loading, error, create } = usePedidos();
+  const { pedidos, loading, error, create, update, remove, changeEstado } = usePedidos();
   const { productos } = useProductos();
   const { colaciones } = useColaciones();
   const [mostrandoForm, setMostrandoForm] = useState(false);
+  const [editando, setEditando] = useState<Pedido | null>(null);
 
   const handleSubmit = async (input: PedidoInput) => {
-    await create(input);
+    if (editando) {
+      await update(editando.id, input);
+    } else {
+      await create(input);
+    }
     setMostrandoForm(false);
+    setEditando(null);
+  };
+
+  // TODO: PedidoForm aún no acepta una prop `inicial` para precargar datos en
+  // modo edición. Cuando se implemente, pasar `inicial={editando}` al formulario
+  // para que editar un pedido cargue sus valores actuales.
+  const handleEdit = (p: Pedido) => {
+    setEditando(p);
+    setMostrandoForm(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('¿Eliminar este pedido?')) return;
+    await remove(id);
+  };
+
+  const handleChangeEstado = (id: string, estado: EstadoPedido) => {
+    void changeEstado(id, estado);
   };
 
   return (
@@ -32,12 +55,22 @@ export function PedidosPage() {
             productos={productos}
             colaciones={colaciones}
             onSubmit={handleSubmit}
-            onCancel={() => setMostrandoForm(false)}
+            onCancel={() => {
+              setMostrandoForm(false);
+              setEditando(null);
+            }}
           />
         </div>
       )}
 
-      <PedidoList pedidos={pedidos} loading={loading} error={error} />
+      <PedidoList
+        pedidos={pedidos}
+        loading={loading}
+        error={error}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onChangeEstado={handleChangeEstado}
+      />
     </div>
   );
 }

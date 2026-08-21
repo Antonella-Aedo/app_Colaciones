@@ -6,6 +6,7 @@ import type {
   Producto,
   RolItem,
 } from '../types';
+import { hoyISO } from '../utils/date';
 import styles from './PedidoForm.module.css';
 
 interface Props {
@@ -234,7 +235,7 @@ export function PedidoForm({ productos, colaciones, onSubmit, onCancel }: Props)
           {items.map((it, idx) => (
             <li key={idx}>
               <span className={styles.itemInfo}>
-                <em style={{ color: 'var(--color-muted)', fontSize: '0.8rem' }}>[{it.rol}]</em>{' '}
+                <em className={styles.rol}>[{it.rol}]</em>{' '}
                 {it.cantidad}× {it.nombre}
                 {(it.agregado || it.ensalada || it.notas) && (
                   <small>
@@ -263,9 +264,5 @@ export function PedidoForm({ productos, colaciones, onSubmit, onCancel }: Props)
       </div>
     </form>
   );
-}
-
-function hoyISO(): string {
-  return new Date().toISOString().slice(0, 10);
 }
 
