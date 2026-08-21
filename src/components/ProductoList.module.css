@@ -1,0 +1,13 @@
+.muted {
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+.error {
+  color: var(--color-danger);
+}
+
+.actions {
+  display: flex;
+  gap: 0.4rem;
+}

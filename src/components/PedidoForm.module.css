@@ -1,0 +1,130 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  max-width: 560px;
+  background: var(--color-surface);
+  padding: 1.2rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.title {
+  margin: 0 0 0.3rem;
+  font-size: 1.1rem;
+}
+
+.row {
+  display: flex;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1;
+  min-width: 180px;
+  font-size: 0.9rem;
+  color: var(--color-muted);
+}
+
+.addItem {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.addItem select {
+  flex: 1;
+}
+
+.cant {
+  width: 80px;
+}
+
+.items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.items li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  justify-content: space-between;
+  padding: 0.5rem 0.7rem;
+  background: #f9fafb;
+  border-radius: var(--radius);
+}
+
+.items li span:first-child {
+  flex: 1;
+}
+
+.itemInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.itemInfo small {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+
+.personalizacion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.8rem;
+  background: #f0f4ff;
+  border-radius: var(--radius);
+  border-left: 3px solid #4472C4;
+}
+
+.personalizacionLabel {
+  font-size: 0.85rem;
+  color: var(--color-muted);
+  font-weight: 600;
+}
+
+.precarga {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+  padding: 0.8rem;
+  background: #f0fdf4;
+  border-radius: var(--radius);
+  border-left: 3px solid #16a34a;
+}
+
+.total {
+  font-weight: 700;
+  font-size: 1.05rem;
+  text-align: right;
+}
+
+.error {
+  color: var(--color-danger);
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+@media (max-width: 600px) {
+  .addItem {
+    flex-wrap: wrap;
+  }
+  .cant {
+    width: 100%;
+  }
+}

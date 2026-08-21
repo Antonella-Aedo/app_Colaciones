@@ -1,0 +1,42 @@
+.muted {
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+.error {
+  color: var(--color-danger);
+}
+
+.items {
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.detalle {
+  display: block;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+}
+
+.estado {
+  text-transform: capitalize;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  background: #e5e7eb;
+}
+
+.estado[data-estado='pendiente'] {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.estado[data-estado='entregado'] {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.estado[data-estado='cancelado'] {
+  background: #fee2e2;
+  color: #991b1b;
+}
