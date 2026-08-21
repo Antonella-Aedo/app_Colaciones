@@ -62,4 +62,6 @@ export interface Pedido {
   estado: EstadoPedido;
 }
 
-export type PedidoInput = Omit<Pedido, 'id' | 'estado'>;
+export type PedidoInput = Omit<Pedido, 'id' | 'estado'> & {
+  estado?: EstadoPedido;
+};

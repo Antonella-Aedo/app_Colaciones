@@ -29,8 +29,17 @@ export async function createPedido(input: PedidoInput): Promise<Pedido> {
 }
 
 export async function updatePedido(id: string, input: PedidoInput): Promise<Pedido> {
-  await setDoc(doc(db, COL, id), { ...input, estado: 'pendiente' });
-  return { id, ...input, estado: 'pendiente' };
+  // Preserva el estado existente si el caller no lo provee.
+  // setDoc reemplaza el documento completo, así que leemos el doc actual
+  // para no perder el estado cuando input.estado es undefined.
+  let estado = input.estado;
+  if (estado === undefined) {
+    const snap = await getDoc(doc(db, COL, id));
+    estado = snap.exists() ? (snap.data() as Pedido).estado : 'pendiente';
+  }
+  const data = { ...input, estado };
+  await setDoc(doc(db, COL, id), data);
+  return { id, ...data };
 }
 
 export async function deletePedido(id: string): Promise<{ id: string }> {

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { resetStore } from '../helpers/mockFirestore';
-import { getPedidos, createPedido } from '../../src/api/pedidos';
+import { resetStore, store } from '../helpers/mockFirestore';
+import { getPedidos, getPedido, createPedido, updatePedido } from '../../src/api/pedidos';
 import type { PedidoInput } from '../../src/types';
 
 const pedidoInput: PedidoInput = {
@@ -32,5 +32,39 @@ describe('api/pedidos (Firestore)', () => {
     expect(lista).toHaveLength(1);
     expect(lista[0].cliente).toBe('Juan');
     expect(lista[0].estado).toBe('pendiente');
+  });
+
+  it('updatePedido preserva el estado existente cuando no se provee en el input', async () => {
+    // Arrange: crear un pedido y forzar estado='entregado' directamente en el store
+    const creado = await createPedido(pedidoInput);
+    const colPedidos = store.get('pedidos')!;
+    colPedidos.set(creado.id, { ...colPedidos.get(creado.id)!, estado: 'entregado' });
+
+    // Act: actualizar solo el cliente, sin proveer estado
+    const actualizado = await updatePedido(creado.id, { ...pedidoInput, cliente: 'Pedro' });
+
+    // Assert: el estado se mantiene en 'entregado', no se reinicia a 'pendiente'
+    expect(actualizado.estado).toBe('entregado');
+    expect(actualizado.cliente).toBe('Pedro');
+
+    // Verificar también que el documento persistido conserva el estado
+    const persistido = await getPedido(creado.id);
+    expect(persistido?.estado).toBe('entregado');
+  });
+
+  it('updatePedido permite cambiar el estado cuando se provee explícitamente', async () => {
+    // Arrange: crear un pedido con estado='pendiente' (default de createPedido)
+    const creado = await createPedido(pedidoInput);
+    expect(creado.estado).toBe('pendiente');
+
+    // Act: actualizar proveyendo estado='cancelado' explícitamente
+    const actualizado = await updatePedido(creado.id, { ...pedidoInput, estado: 'cancelado' });
+
+    // Assert: el estado cambia a 'cancelado'
+    expect(actualizado.estado).toBe('cancelado');
+
+    // Verificar también que el documento persistido refleja el nuevo estado
+    const persistido = await getPedido(creado.id);
+    expect(persistido?.estado).toBe('cancelado');
   });
 });
