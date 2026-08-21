@@ -9,6 +9,7 @@ import {
   query,
   where,
   writeBatch,
+  type DocumentReference,
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import type { Colacion, ColacionInput } from '../types';
@@ -35,7 +36,7 @@ export async function getColacionActiva(): Promise<Colacion | null> {
 }
 
 export async function createColacion(input: ColacionInput): Promise<Colacion> {
-  let ref;
+  let ref: DocumentReference;
   if (input.activa) {
     // desactivar las demás en batch (solo una activa a la vez)
     const batch = writeBatch(db);

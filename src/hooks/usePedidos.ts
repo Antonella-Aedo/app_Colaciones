@@ -21,6 +21,8 @@ export function usePedidos() {
   }, []);
 
   useEffect(() => {
+    // fetch-on-mount: refetch is async; setState runs after await, not synchronously
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refetch();
   }, [refetch]);
 
