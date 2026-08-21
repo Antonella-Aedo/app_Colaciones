@@ -57,6 +57,40 @@ describe('PedidoForm', () => {
     expect(input.items).toHaveLength(2);
   });
 
+  it('precarga las notas de los items de la colación en el campo notas (no nota)', async () => {
+    const colacionesConNotas: Colacion[] = [
+      {
+        id: 'c-notas',
+        nombre: 'Menú con notas',
+        fecha: '2026-08-21',
+        activa: true,
+        creadoPor: 'Ana',
+        items: [
+          { productoId: 'f1', rol: 'fondo', orden: 1, nota: 'sin cebolla' },
+          { productoId: 'a1', rol: 'agregado', orden: 2, nota: 'porción doble' },
+        ],
+      },
+    ];
+
+    const onSubmit = vi.fn(async (_input: PedidoInput): Promise<void> => {});
+    render(<PedidoForm productos={productos} colaciones={colacionesConNotas} onSubmit={onSubmit} onCancel={vi.fn()} />);
+
+    // seleccionar colación en el select de precarga
+    const selectPrecarga = screen.getByLabelText(/Precargar desde colación/);
+    fireEvent.change(selectPrecarga, { target: { value: 'c-notas' } });
+
+    // llenar cliente y enviar
+    fireEvent.change(screen.getByLabelText(/Cliente/), { target: { value: 'Juan' } });
+    fireEvent.click(screen.getByText('Guardar pedido'));
+    await vi.waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+
+    const input = onSubmit.mock.calls[0][0] as PedidoInput;
+    expect(input.items).toHaveLength(2);
+    // cada item precargado debe conservar su nota en el campo `notas` (plural)
+    expect(input.items[0].notas).toBe('sin cebolla');
+    expect(input.items[1].notas).toBe('porción doble');
+  });
+
   it('no permite enviar sin items', async () => {
     const onSubmit = vi.fn();
     render(<PedidoForm productos={productos} colaciones={colaciones} onSubmit={onSubmit} onCancel={vi.fn()} />);

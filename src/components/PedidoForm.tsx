@@ -57,7 +57,7 @@ export function PedidoForm({ productos, colaciones, onSubmit, onCancel }: Props)
         precio: prod?.precio ?? 0,
         cantidad: 1,
         rol: ci.rol,
-        nota: ci.nota,
+        notas: ci.nota,
       };
     });
     setItems(itemsPrecargados);
