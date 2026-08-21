@@ -9,7 +9,11 @@ const firebaseConfig = {
   projectId: 'app-colaciones-506203',
   appId: '1:313826246588:web:3e41b0becad24f089475b9',
   storageBucket: 'app-colaciones-506203.firebasestorage.app',
+<<<<<<< HEAD
   apiKey: 'AIzaSyBybGzGns8SEkuD5ha_v24NC3m_nBThC7M',
+=======
+  apiKey: '***REDACTED***',
+>>>>>>> 44227fd (feat: migracion a Firebase Firestore + deploy a Firebase Hosting)
   authDomain: 'app-colaciones-506203.firebaseapp.com',
   messagingSenderId: '313826246588',
 };
