@@ -1,10 +1,233 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // MODO TEST (desarrollo) — sin auth.
-    // Cambiar a reglas reales antes de producción.
+
+    // =====================================================================
+    // REGLAS DE FIRESTORE — app_Colaciones
+    // =====================================================================
+    // Colecciones: productos, colaciones, pedidos
+    //
+    // Tres modos de operación (SOLO UNO activo a la vez):
+    //
+    //   1. MODO DESARROLLO (totalmente abierto)  → ver bloque comentado abajo
+    //   2. MODO TRANSICIÓN MVP (lectura sin auth, escritura con auth)
+    //      → ver bloque comentado abajo
+    //   3. MODO SEGURO (auth obligatoria + validación de campos)  → ACTIVO
+    //
+    // Para cambiar de modo: comenta/descomenta el bloque correspondiente.
+    // El modo seguro (3) es el que debe estar activo en cualquier entorno
+    // que no sea desarrollo local.
+    // =====================================================================
+
+
+    // =====================================================================
+    // MODO 1 — DESARROLLO (totalmente abierto)
+    // =====================================================================
+    // SOLO DESARROLLO — NO USAR EN PRODUCCION
+    // Estas reglas permiten acceso total sin autenticación. Cualquiera con
+    // la configuración de Firebase puede leer, crear, modificar o eliminar
+    // cualquier documento. Usar únicamente en entorno local de desarrollo.
+    //
+    // Para activar: descomenta este bloque Y comenta el bloque del MODO 3.
+    //
+    // match /{document=**} {
+    //   allow read, write: if true;
+    // }
+    // =====================================================================
+
+
+    // =====================================================================
+    // MODO 2 — TRANSICIÓN MVP (lectura pública, escritura con auth)
+    // =====================================================================
+    // SOLO DESARROLLO / STAGING — NO USAR EN PRODUCCION
+    // Permite lectura sin autenticación (para que la app funcione durante
+    // la transición del MVP sin auth) pero exige autenticación para todas
+    // las escrituras, con validación de campos.
+    //
+    // Para activar: descomenta este bloque Y comenta el bloque del MODO 3.
+    //
+    // match /productos/{docId} {
+    //   allow read: if true;
+    //   allow create, update, delete: if isSignedIn() && productoValido();
+    // }
+    // match /colaciones/{docId} {
+    //   allow read: if true;
+    //   allow create, update, delete: if isSignedIn() && colacionValida();
+    // }
+    // match /pedidos/{docId} {
+    //   allow read: if true;
+    //   allow create, update, delete: if isSignedIn() && pedidoValido();
+    // }
+    // =====================================================================
+
+
+    // =====================================================================
+    // MODO 3 — SEGURO (auth obligatoria + validación) — ACTIVO
+    // =====================================================================
+    // Este es el modo que debe estar activo en staging y producción.
+    // Requiere autenticación para todas las operaciones (lectura y
+    // escritura) y valida tipos de campos, campos obligatorios y
+    // allowlists de campos en cada escritura.
+    // =====================================================================
+
+    // ---------------------------------------------------------------------
+    // Funciones auxiliares — autenticación
+    // ---------------------------------------------------------------------
+
+    // Verifica que el usuario esté autenticado.
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Verifica que el usuario sea administrador.
+    // TODO post-MVP: añadir verificación de rol admin real, p.ej.:
+    //   return isSignedIn() && request.auth.token.admin == true;
+    //   o consultar un documento en /admins/{uid}.
+    function isAuthedAdmin() {
+      return isSignedIn();
+    }
+
+    // ---------------------------------------------------------------------
+    // Funciones auxiliares — tipos primitivos
+    // ---------------------------------------------------------------------
+
+    function isString(v)    { return v is string; }
+    function isNumber(v)    { return v is number; }
+    function isBool(v)      { return v is bool; }
+    function isList(v)      { return v is list; }
+    function nonEmptyStr(v) { return isString(v) && v.size() > 0; }
+    function isStrOrNull(v) { return isString(v) || v == null; }
+
+    // Verifica que el mapa `data` contenga exactamente los campos listados
+    // en `allowed` (allowlist — rechaza campos arbitrarios no definidos en
+    // el esquema).
+    function hasOnlyFields(data, allowed) {
+      return data.keys().hasOnly(allowed);
+    }
+
+    // ---------------------------------------------------------------------
+    // Validación — productos
+    // ---------------------------------------------------------------------
+    // Esquema:
+    //   nombre:      string, no vacío
+    //   descripcion: string
+    //   precio:      number, >= 0
+    //   categoria:   string
+    //   disponible:  boolean
+    // Allowlist: [nombre, descripcion, precio, categoria, disponible]
+
+    function productoValido() {
+      let data = request.resource.data;
+      return hasOnlyFields(data, ['nombre', 'descripcion', 'precio', 'categoria', 'disponible'])
+        && nonEmptyStr(data.nombre)
+        && isString(data.descripcion)
+        && isNumber(data.precio)
+        && data.precio >= 0
+        && isString(data.categoria)
+        && isBool(data.disponible);
+    }
+
+    // ---------------------------------------------------------------------
+    // Validación — colaciones
+    // ---------------------------------------------------------------------
+    // Esquema:
+    //   nombre:    string, no vacío
+    //   fecha:     string (ISO yyyy-MM-dd)
+    //   activa:    boolean
+    //   creadoPor: string
+    //   items:     list (array de ColacionItem)
+    // Allowlist: [nombre, fecha, activa, creadoPor, items]
+
+    function colacionValida() {
+      let data = request.resource.data;
+      return hasOnlyFields(data, ['nombre', 'fecha', 'activa', 'creadoPor', 'items'])
+        && nonEmptyStr(data.nombre)
+        && isString(data.fecha)
+        && isBool(data.activa)
+        && isString(data.creadoPor)
+        && isList(data.items);
+    }
+
+    // ---------------------------------------------------------------------
+    // Validación — pedidos
+    // ---------------------------------------------------------------------
+    // Esquema:
+    //   fecha:          string (ISO yyyy-MM-dd)
+    //   cliente:        string, no vacío
+    //   registradoPor:  string
+    //   colacionId:     string | null (opcional)
+    //   items:          list (array de PedidoItem)
+    //   total:          number, >= 0
+    //   estado:         string, uno de: pendiente | entregado | cancelado
+    // Allowlist: [fecha, cliente, registradoPor, colacionId, items, total, estado]
+
+    function isValidEstado(v) {
+      return isString(v)
+        && (v == 'pendiente' || v == 'entregado' || v == 'cancelado');
+    }
+
+    function pedidoValido() {
+      let data = request.resource.data;
+      return hasOnlyFields(data, ['fecha', 'cliente', 'registradoPor', 'colacionId', 'items', 'total', 'estado'])
+        && isString(data.fecha)
+        && nonEmptyStr(data.cliente)
+        && isString(data.registradoPor)
+        && isStrOrNull(data.colacionId)
+        && isList(data.items)
+        && isNumber(data.total)
+        && data.total >= 0
+        && isValidEstado(data.estado);
+    }
+
+    // ---------------------------------------------------------------------
+    // Reglas de colección — productos
+    // ---------------------------------------------------------------------
+    // Lectura y escritura requieren auth (modo seguro).
+    // create/update validan campos con productoValido().
+    // delete: requiere auth. No se puede verificar referencias inversas desde
+    //   colaciones/pedidos dentro de las reglas (Firestore no permite
+    //   consultar otras colecciones en reglas). La protección contra
+    //   eliminar productos referenciados debe hacerse a nivel de aplicación
+    //   (verificar que no existan items con ese productoId antes de borrar).
+    //   Aquí al menos garantizamos que solo un usuario autenticado puede
+    //   eliminar.
+
+    match /productos/{productoId} {
+      allow read:   if isAuthedAdmin();
+      allow create: if isAuthedAdmin() && productoValido();
+      allow update: if isAuthedAdmin() && productoValido();
+      allow delete: if isAuthedAdmin();
+    }
+
+    // ---------------------------------------------------------------------
+    // Reglas de colección — colaciones
+    // ---------------------------------------------------------------------
+
+    match /colaciones/{colacionId} {
+      allow read:   if isAuthedAdmin();
+      allow create: if isAuthedAdmin() && colacionValida();
+      allow update: if isAuthedAdmin() && colacionValida();
+      allow delete: if isAuthedAdmin();
+    }
+
+    // ---------------------------------------------------------------------
+    // Reglas de colección — pedidos
+    // ---------------------------------------------------------------------
+
+    match /pedidos/{pedidoId} {
+      allow read:   if isAuthedAdmin();
+      allow create: if isAuthedAdmin() && pedidoValido();
+      allow update: if isAuthedAdmin() && pedidoValido();
+      allow delete: if isAuthedAdmin();
+    }
+
+    // ---------------------------------------------------------------------
+    // Bloqueo por defecto — niega todo lo no contemplado arriba.
+    // ---------------------------------------------------------------------
+    // Cualquier colección no listada explícitamente queda inaccesible.
+
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }
