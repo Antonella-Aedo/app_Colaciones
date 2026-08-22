@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Cliente, ClienteInput } from '../types';
 import styles from './ClienteForm.module.css';
+import { mensajeDeError } from '../utils/errores';
 
 interface Props {
   inicial?: Cliente | null;
@@ -43,7 +44,7 @@ export function ClienteForm({ inicial, onSubmit, onCancel }: Props) {
         nombre: form.nombre?.trim() || null,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al guardar');
+      setError(mensajeDeError(err));
     } finally {
       setGuardando(false);
     }
@@ -51,7 +52,6 @@ export function ClienteForm({ inicial, onSubmit, onCancel }: Props) {
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
-      <h2 className={styles.title}>{inicial ? 'Editar cliente' : 'Nuevo cliente'}</h2>
       {error && <p className={styles.error}>{error}</p>}
       <label className={styles.field}>
         Dirección *

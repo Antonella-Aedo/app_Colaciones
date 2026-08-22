@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Producto, ProductoInput } from '../types';
 import styles from './ProductoForm.module.css';
+import { mensajeDeError } from '../utils/errores';
 
 interface Props {
   inicial?: Producto | null;
@@ -55,12 +56,18 @@ export function ProductoForm({ inicial, onSubmit, onCancel }: Props) {
       setError('El precio no puede ser negativo');
       return;
     }
+    // La categoria es obligatoria en el esquema. Sin este chequeo el form
+    // dejaba enviar y el error llegaba como el JSON crudo de ZodError.
+    if (!form.categoria.trim()) {
+      setError('La categoría es obligatoria');
+      return;
+    }
     setError(null);
     setGuardando(true);
     try {
       await onSubmit({ ...form, categoria: form.categoria.trim().toLowerCase() });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al guardar');
+      setError(mensajeDeError(err));
     } finally {
       setGuardando(false);
     }
@@ -68,58 +75,66 @@ export function ProductoForm({ inicial, onSubmit, onCancel }: Props) {
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
-      <h2 className={styles.title}>{inicial ? 'Editar producto' : 'Nuevo producto'}</h2>
       {error && <p className={styles.error}>{error}</p>}
-      <label className={styles.field}>
-        Nombre *
-        <input value={form.nombre} onChange={(e) => set('nombre', e.target.value)} autoFocus />
-      </label>
-      <label className={styles.field}>
-        Descripción
-        <textarea
-          value={form.descripcion}
-          onChange={(e) => set('descripcion', e.target.value)}
-          rows={2}
-        />
-      </label>
-      <label className={styles.field}>
-        Precio
-        <input
-          type="number"
-          min={0}
-          value={form.precio}
-          onChange={(e) => set('precio', Number(e.target.value))}
-        />
-      </label>
-      <label className={styles.field}>
-        Categoría
-        <select value={categoriaSel} onChange={(e) => cambiarCategoria(e.target.value)}>
-          <option value="">— Selecciona —</option>
-          {CATEGORIAS_FIJAS.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-          <option value={OTRA}>Otra…</option>
-        </select>
-      </label>
-      {categoriaSel === OTRA && (
+
+      <fieldset className={styles.section}>
+        <legend className={styles.sectionTitle}>Datos del producto</legend>
         <label className={styles.field}>
-          Categoría personalizada
-          <input
-            value={form.categoria}
-            onChange={(e) => set('categoria', e.target.value)}
-            placeholder="escribe el nombre"
-            autoFocus
+          Nombre *
+          <input value={form.nombre} onChange={(e) => set('nombre', e.target.value)} autoFocus />
+        </label>
+        <label className={styles.field}>
+          Descripción
+          <textarea
+            value={form.descripcion}
+            onChange={(e) => set('descripcion', e.target.value)}
+            rows={2}
           />
         </label>
-      )}
-      <label className={styles.check}>
-        <input
-          type="checkbox"
-          checked={form.disponible}
-          onChange={(e) => set('disponible', e.target.checked)}
-        />
-        Disponible
-      </label>
+      </fieldset>
+
+      <fieldset className={styles.section}>
+        <legend className={styles.sectionTitle}>Clasificación y precio</legend>
+        <label className={styles.field}>
+          Precio
+          <input
+            type="number"
+            min={0}
+            value={form.precio}
+            onChange={(e) => set('precio', Number(e.target.value))}
+          />
+        </label>
+        <label className={styles.field}>
+          Categoría *
+          <select value={categoriaSel} onChange={(e) => cambiarCategoria(e.target.value)}>
+            <option value="">— Selecciona —</option>
+            {CATEGORIAS_FIJAS.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+            <option value={OTRA}>Otra…</option>
+          </select>
+        </label>
+        {categoriaSel === OTRA && (
+          <label className={styles.field}>
+            Categoría personalizada
+            <input
+              value={form.categoria}
+              onChange={(e) => set('categoria', e.target.value)}
+              placeholder="escribe el nombre"
+              autoFocus
+            />
+          </label>
+        )}
+        <label className={styles.check}>
+          <input
+            type="checkbox"
+            checked={form.disponible}
+            onChange={(e) => set('disponible', e.target.checked)}
+          />
+          Disponible
+        </label>
+      </fieldset>
+
       <div className={styles.actions}>
         <button type="submit" className="primary" disabled={guardando}>
           {guardando ? 'Guardando…' : 'Guardar'}

@@ -70,10 +70,9 @@ export function ProductoList({ productos, loading, error, onEdit, onDelete }: Pr
       if (soloDisponibles && !p.disponible) return false;
       if (categoriaActiva && resolverCategoria(p.categoria).key !== categoriaActiva) return false;
       if (!q) return true;
-      return (
-        p.nombre.toLowerCase().includes(q) ||
-        (p.descripcion ?? '').toLowerCase().includes(q)
-      );
+      // Solo por nombre: la descripción ya no se muestra en la card, y una
+      // coincidencia invisible se lee como un resultado sin razón.
+      return p.nombre.toLowerCase().includes(q);
     });
   }, [productos, busqueda, categoriaActiva, soloDisponibles]);
 
@@ -126,7 +125,7 @@ export function ProductoList({ productos, loading, error, onEdit, onDelete }: Pr
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             placeholder="Buscar producto…"
-            aria-label="Buscar producto por nombre o descripción"
+            aria-label="Buscar producto por nombre"
           />
         </div>
 
@@ -199,8 +198,6 @@ export function ProductoList({ productos, loading, error, onEdit, onDelete }: Pr
                     <h4 className={styles.nombre}>{p.nombre}</h4>
                     {!p.disponible && <span className={styles.agotado}>Agotado</span>}
                   </div>
-
-                  {p.descripcion && <p className={styles.descripcion}>{p.descripcion}</p>}
 
                   <div className={styles.cardFooter}>
                     <span className={styles.precio}>${p.precio.toLocaleString('es-CL')}</span>

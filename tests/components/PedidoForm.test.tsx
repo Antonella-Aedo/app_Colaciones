@@ -35,7 +35,7 @@ beforeEach(() => {
 });
 
 describe('PedidoForm', () => {
-  it('muestra personalización de agregado/ensalada cuando el rol es fondo (por defecto)', () => {
+  it('muestra personalización del fondo cuando se selecciona un fondo', () => {
     render(
       <PedidoForm
         productos={productos}
@@ -45,6 +45,9 @@ describe('PedidoForm', () => {
         onCancel={vi.fn()}
       />,
     );
+    // Seleccionar un fondo en el primer menú
+    const selectFondo = screen.getByLabelText(/Fondo/i);
+    fireEvent.change(selectFondo, { target: { value: 'f1' } });
     expect(screen.getByText('Personalización del fondo:')).toBeDefined();
   });
 
@@ -119,8 +122,8 @@ describe('PedidoForm', () => {
 
     const input = onSubmit.mock.calls[0][0] as PedidoInput;
     expect(input.items).toHaveLength(2);
-    expect(input.items[0].notas).toBe('sin cebolla');
-    expect(input.items[1].notas).toBe('porción doble');
+    // En el modelo de menús, las notas se combinan en el campo notas del fondo
+    expect(input.items[0].notas).toContain('sin cebolla');
   });
 
   it('no permite enviar sin items', async () => {
@@ -152,9 +155,8 @@ describe('PedidoForm', () => {
         onCancel={vi.fn()}
       />,
     );
-    // agregar item sin seleccionar cliente
-    fireEvent.change(screen.getByDisplayValue('— Producto —'), { target: { value: 'f1' } });
-    fireEvent.click(screen.getByText('Agregar'));
+    // seleccionar un fondo (crea un item) sin seleccionar cliente
+    fireEvent.change(screen.getByLabelText(/Fondo/i), { target: { value: 'f1' } });
     fireEvent.click(screen.getByText('Guardar pedido'));
     await vi.waitFor(() => expect(screen.getByText(/cliente es obligatorio/i)).toBeDefined());
     expect(onSubmit).not.toHaveBeenCalled();
@@ -176,12 +178,13 @@ describe('PedidoForm', () => {
       />,
     );
 
-    fireEvent.change(screen.getByDisplayValue('— Producto —'), { target: { value: 't1' } });
-    fireEvent.change(screen.getByRole('spinbutton'), { target: { value: 2 } });
-    fireEvent.click(screen.getByText('Agregar'));
+    // Seleccionar fondo y setear cantidad a 2
+    fireEvent.change(screen.getByLabelText(/Fondo/i), { target: { value: 't1' } });
+    fireEvent.change(screen.getByLabelText(/Cantidad/i), { target: { value: 2 } });
 
+    // Agregar un extra (bebida)
     fireEvent.change(screen.getByDisplayValue('— Producto —'), { target: { value: 't2' } });
-    fireEvent.click(screen.getByText('Agregar'));
+    fireEvent.click(screen.getByText('Agregar extra'));
 
     const selectCliente = screen.getByLabelText(/Cliente/);
     fireEvent.change(selectCliente, { target: { value: 'cli-1' } });
@@ -208,8 +211,8 @@ describe('PedidoForm', () => {
       />,
     );
 
-    fireEvent.change(screen.getByDisplayValue('— Producto —'), { target: { value: 'f1' } });
-    fireEvent.click(screen.getByText('Agregar'));
+    // Seleccionar fondo
+    fireEvent.change(screen.getByLabelText(/Fondo/i), { target: { value: 'f1' } });
 
     const selectCliente = screen.getByLabelText(/Cliente/);
     fireEvent.change(selectCliente, { target: { value: 'cli-1' } });
@@ -280,7 +283,6 @@ describe('PedidoForm', () => {
       );
     });
 
-    expect(screen.getByText('Editar pedido')).toBeDefined();
     expect(screen.getAllByText(/Pescado frito/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Coca-Cola/).length).toBeGreaterThan(0);
     expect(screen.getByText('Guardar cambios')).toBeDefined();

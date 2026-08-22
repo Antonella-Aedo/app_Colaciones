@@ -1,46 +1,109 @@
+/* Vive dentro de un Drawer: el panel aporta fondo, padding y título.
+   Los colores de rol ya no son hex sueltos: mapean a los mismos tokens de
+   categoría que usa el catálogo, así el color de "fondo" es el mismo en la
+   bandeja, en la card del producto y en el riel del grupo. */
+
 .form {
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
-  max-width: 680px;
-  background: var(--color-surface);
-  padding: 1.2rem;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  gap: var(--space-4);
 }
 
-.title {
-  margin: 0 0 0.3rem;
-  font-size: 1.1rem;
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-4);
+  border: none;
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  box-shadow: var(--elev-flat);
+}
+
+.sectionTitle {
+  padding: 0;
+  margin-bottom: var(--space-1);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 
 .row {
   display: flex;
-  gap: 0.9rem;
+  gap: var(--space-3);
   flex-wrap: wrap;
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: var(--space-1);
   flex: 1;
-  min-width: 160px;
-  font-size: 0.9rem;
-  color: var(--color-muted);
+  min-width: 140px;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-secondary);
 }
+
+.field input,
+.field select {
+  background: var(--surface-1);
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.check input {
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  accent-color: var(--brand-600);
+  cursor: pointer;
+}
+
+/* --- Constructor de la bandeja -------------------------------------------- */
 
 .addItem {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--space-2);
   align-items: flex-end;
   flex-wrap: wrap;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-soft);
 }
 
-.addItem select {
+.addItem select,
+.addItem input {
   flex: 1;
-  min-width: 180px;
+  min-width: 140px;
+  background: var(--surface-1);
 }
+
+.addItem button {
+  flex: none;
+}
+
+.vacio {
+  margin: 0;
+  padding: var(--space-4) var(--space-3);
+  text-align: center;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  border: 1px dashed var(--border-hairline);
+  border-radius: var(--radius-sm);
+}
+
+/* --- Items de la bandeja --------------------------------------------------- */
 
 .items {
   list-style: none;
@@ -48,60 +111,62 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: var(--space-2);
 }
 
 .items li {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: var(--space-3);
   justify-content: space-between;
-  padding: 0.5rem 0.7rem;
-  background: #f9fafb;
-  border-radius: var(--radius);
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-1);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--elev-flat);
   flex-wrap: wrap;
 }
 
 .items li .info {
   flex: 1;
-  min-width: 180px;
+  min-width: 160px;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
 }
 
 .items li .info small {
   display: block;
-  color: var(--color-muted);
-  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-size: var(--text-caption);
 }
 
+/* El rol toma el color del alimento, igual que en el catálogo */
 .rolBadge {
-  font-size: 0.75rem;
-  padding: 0.1rem 0.5rem;
-  border-radius: 999px;
-  background: #e5e7eb;
-  color: #374151;
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
   text-transform: lowercase;
+  background: var(--cat-otro-soft);
+  color: var(--cat-otro);
 }
 
-.rolBadge[data-rol='fondo'] { background: #dbeafe; color: #1e40af; }
-.rolBadge[data-rol='agregado'] { background: #fef3c7; color: #92400e; }
-.rolBadge[data-rol='ensalada'] { background: #d1fae5; color: #065f46; }
-.rolBadge[data-rol='extra'] { background: #ede9fe; color: #5b21b6; }
+.rolBadge[data-rol='fondo']    { background: var(--cat-fondo-soft);    color: var(--cat-fondo); }
+.rolBadge[data-rol='agregado'] { background: var(--cat-agregado-soft); color: var(--cat-agregado); }
+.rolBadge[data-rol='ensalada'] { background: var(--cat-ensalada-soft); color: var(--cat-ensalada); }
+.rolBadge[data-rol='extra']    { background: var(--cat-extra-soft);    color: var(--cat-extra); }
 
 .error {
-  color: var(--color-danger);
   margin: 0;
-  font-size: 0.9rem;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-radius: var(--radius-sm);
 }
 
 .actions {
   display: flex;
-  gap: 0.5rem;
-}
-
-.check {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.9rem;
-  color: var(--color-muted);
+  gap: var(--space-2);
+  padding-top: var(--space-2);
 }

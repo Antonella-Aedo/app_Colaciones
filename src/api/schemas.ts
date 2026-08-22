@@ -36,7 +36,10 @@ export const ColacionSchema = z.object({
   nombre: z.string().min(1, 'nombre es requerido'),
   fecha: z.string().min(1, 'fecha es requerida'),
   activa: z.boolean(),
-  creadoPor: z.string().min(1, 'creadoPor es requerido'),
+  // Opcional: la UI lo presenta sin asterisco y sin validacion, asi que un
+  // valor vacio NO debe bloquear el guardado. Se persiste como '' (las
+  // reglas solo exigen que sea string).
+  creadoPor: z.string(),
   items: z.array(ColacionItemSchema).min(1, 'items debe tener al menos un elemento'),
 });
 
@@ -105,7 +108,8 @@ export const PedidoSchema = z.object({
   clienteNombre: z.string().nullable(),
   clienteDireccion: z.string().min(1, 'clienteDireccion es requerido'),
   clienteContacto: z.string().min(1, 'clienteContacto es requerido'),
-  registradoPor: z.string().min(1, 'registradoPor es requerido'),
+  // Opcional, mismo criterio que Colacion.creadoPor: vacio se guarda como ''.
+  registradoPor: z.string(),
   colacionId: z.string().nullable(),
   items: z.array(PedidoItemSchema).min(1, 'items debe tener al menos un elemento'),
   total: z.number().min(0, 'total debe ser >= 0'),

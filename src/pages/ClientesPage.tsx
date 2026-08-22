@@ -3,6 +3,7 @@ import { useClientes } from '../hooks/useClientes';
 import { ClienteList } from '../components/ClienteList';
 import { ClienteForm } from '../components/ClienteForm';
 import { PageHeader } from '../components/PageHeader';
+import { Drawer } from '../components/Drawer';
 import type { Cliente, ClienteInput } from '../types';
 
 export function ClientesPage() {
@@ -20,10 +21,7 @@ export function ClientesPage() {
     setMostrandoForm(true);
   };
 
-  const cerrarForm = () => {
-    setMostrandoForm(false);
-    setEditando(null);
-  };
+  const cerrarForm = () => setMostrandoForm(false);
 
   const handleSubmit = async (input: ClienteInput) => {
     if (editando) {
@@ -45,19 +43,21 @@ export function ClientesPage() {
         titulo="Clientes"
         descripcion="Direcciones y contactos que alimentan cada pedido."
         acciones={
-          !mostrandoForm && (
-            <button className="primary" onClick={abrirNuevo}>
-              Nuevo cliente
-            </button>
-          )
+          <button className="primary" onClick={abrirNuevo}>
+            Nuevo cliente
+          </button>
         }
       />
 
-      {mostrandoForm && (
-        <div style={{ marginBottom: 'var(--space-6)' }}>
-          <ClienteForm inicial={editando} onSubmit={handleSubmit} onCancel={cerrarForm} />
-        </div>
-      )}
+      <Drawer
+        open={mostrandoForm}
+        onOpenChange={(open) => {
+          if (!open) cerrarForm();
+        }}
+        title={editando ? 'Editar cliente' : 'Nuevo cliente'}
+      >
+        <ClienteForm inicial={editando} onSubmit={handleSubmit} onCancel={cerrarForm} />
+      </Drawer>
 
       <ClienteList
         clientes={clientes}

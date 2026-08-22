@@ -1,0 +1,119 @@
+/* Panel lateral para crear/editar entidades. Entra de izquierda a derecha.
+   Toda creación/edición vive acá — no hay formularios inline. */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(20, 32, 26, 0.32);
+}
+
+.panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 41;
+  display: flex;
+  flex-direction: column;
+  width: min(480px, 100vw);
+  outline: none;
+
+  background: var(--surface-1);
+  /* Solo la esquina derecha: la izquierda vive fuera de la pantalla */
+  border-radius: 0 var(--radius-xl) var(--radius-xl) 0;
+  box-shadow: var(--elev-3);
+}
+
+/* --- Header sticky -------------------------------------------------------- */
+
+.header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 56px;
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--track-snug);
+  color: var(--text-primary);
+}
+
+.cerrar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-tertiary);
+}
+
+.cerrar:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.cerrar svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* --- Body scrollable ------------------------------------------------------ */
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-5);
+}
+
+/* --- Movimiento ----------------------------------------------------------- */
+/* Vaul ya trae sus propios keyframes (`slideFromLeft` en el panel, `fadeIn` en
+   el overlay) y sus selectores ganan en especificidad. Escribir keyframes
+   propios acá es código muerto: se sobreescriben a medias y dejan la animación
+   en un estado híbrido. Se reusan los de Vaul y solo se ajusta el TIEMPO.
+ *
+ * Solo se toca la APERTURA. El cierre se deja tal cual: Vaul ata el desmontaje
+ * del nodo a esa duración, y acortarla lo desincroniza — el panel terminaría de
+ * salir y volvería a aparecer hasta que Vaul lo desmonte.
+ *
+ * La especificidad extra (`.clase` + 2 atributos) es deliberada: es lo mínimo
+ * para ganarle a Vaul sin recurrir a `!important`. */
+
+.overlay[data-vaul-overlay][data-state='open'],
+.panel[data-vaul-drawer][data-state='open'] {
+  animation-duration: var(--dur-slow);
+  animation-timing-function: var(--ease-out);
+}
+
+/* --- Responsive ----------------------------------------------------------- */
+
+@media (max-width: 600px) {
+  .panel {
+    width: 100vw;
+    border-radius: 0;
+  }
+
+  .header {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .body {
+    padding: var(--space-4);
+  }
+}

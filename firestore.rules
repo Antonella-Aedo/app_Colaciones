@@ -1,4 +1,6 @@
 rules_version = '2';
+// Revision: 2026-08-21 - fix .lower() + lectura de campos opcionales con data.get()
+// Verificado con: npm run test:rules (43 casos, uno por operacion de cada pagina)
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -83,11 +85,11 @@ service cloud.firestore {
     // Requiere: (1) sesión autenticada Y (2) exista un documento en
     // /usuariosPermitidos con ID = email del usuario en minúsculas.
     // Firestore Rules expone el email del usuario autenticado con Google
-    // en request.auth.token.email; .lowercase() normaliza para coincidir
+    // en request.auth.token.email; .lower() normaliza para coincidir
     // con los doc IDs (que se guardan en minúsculas).
     function isAuthedAdmin() {
       return isSignedIn()
-        && exists(/databases/$(database)/documents/usuariosPermitidos/$(request.auth.token.email.lowercase()));
+        && exists(/databases/$(database)/documents/usuariosPermitidos/$(request.auth.token.email.lower()));
     }
 
     // ---------------------------------------------------------------------
@@ -99,7 +101,12 @@ service cloud.firestore {
     function isBool(v)      { return v is bool; }
     function isList(v)      { return v is list; }
     function nonEmptyStr(v) { return isString(v) && v.size() > 0; }
-    function isStrOrNull(v) { return isString(v) || v == null; }
+    // OJO: en Firestore Rules, leer una clave AUSENTE de un mapa con la
+    // notación `data.campo` lanza un error de evaluación ("Property X is
+    // undefined on object") y la regla deniega. Para campos opcionales hay
+    // que leerlos con `data.get('campo', null)`, que devuelve el default si
+    // la clave no existe. isStrOrNull() asume que se le pasa ese get().
+    function isStrOrNull(v) { return v == null || isString(v); }
 
     // Verifica que el mapa `data` contenga exactamente los campos listados
     // en `allowed` (allowlist — rechaza campos arbitrarios no definidos en
@@ -168,7 +175,7 @@ service cloud.firestore {
       return hasOnlyFields(data, ['direccion', 'contacto', 'nombre'])
         && nonEmptyStr(data.direccion)
         && nonEmptyStr(data.contacto)
-        && (data.nombre == null || isString(data.nombre));
+        && isStrOrNull(data.get('nombre', null));
     }
 
     // ---------------------------------------------------------------------
@@ -236,11 +243,11 @@ service cloud.firestore {
         ])
         && isString(data.fecha)
         && nonEmptyStr(data.clienteId)
-        && isStrOrNull(data.clienteNombre)
+        && isStrOrNull(data.get('clienteNombre', null))
         && nonEmptyStr(data.clienteDireccion)
         && nonEmptyStr(data.clienteContacto)
         && isString(data.registradoPor)
-        && isStrOrNull(data.colacionId)
+        && isStrOrNull(data.get('colacionId', null))
         && isList(data.items)
         && isNumber(data.total)
         && data.total >= 0
@@ -250,9 +257,10 @@ service cloud.firestore {
         && data.deliveryCost >= 0
         && isValidMetodoPago(data.metodoPago)
         && isValidEstadoPago(data.estadoPago)
-        && isStrOrNull(data.estadoActualizadoPor)
-        && isStrOrNull(data.estadoActualizadoEn)
-        && (data.historialEstados == null || isList(data.historialEstados));
+        && isStrOrNull(data.get('estadoActualizadoPor', null))
+        && isStrOrNull(data.get('estadoActualizadoEn', null))
+        && (data.get('historialEstados', null) == null
+          || isList(data.historialEstados));
     }
 
     // ---------------------------------------------------------------------

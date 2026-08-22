@@ -17,7 +17,7 @@ beforeEach(() => {
 describe('ColacionForm', () => {
   it('renderiza con productos del catálogo', () => {
     render(<ColacionForm productos={productos} onSubmit={vi.fn()} onCancel={vi.fn()} />);
-    expect(screen.getByText('Nueva colación')).toBeDefined();
+    expect(screen.getByText('Guardar colación')).toBeDefined();
     expect(screen.getByText('Pescado frito (fondo)')).toBeDefined();
   });
 
@@ -63,6 +63,45 @@ describe('ColacionForm', () => {
     expect(input.nombre).toBe('Menú del día');
     expect(input.items).toHaveLength(1);
     expect(input.items[0].rol).toBe('fondo');
+  });
+
+  it('sin nota, el item NO lleva la clave `nota` (Firestore rechaza undefined)', async () => {
+    // Regresión: el form ponía `nota: nota.trim() || undefined`, y Firestore
+    // rechaza el documento entero con "Unsupported field value: undefined",
+    // rompiendo la creación de colaciones en producción.
+    const onSubmit = vi.fn(async (_input: ColacionInput): Promise<void> => {});
+    render(<ColacionForm productos={productos} onSubmit={onSubmit} onCancel={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText(/Nombre/), { target: { value: 'Menú sin nota' } });
+
+    fireEvent.change(screen.getByDisplayValue('— Producto del catálogo —'), { target: { value: 'f1' } });
+    fireEvent.click(screen.getByText('Agregar'));
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Guardar colación'));
+    });
+    await vi.waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+
+    const input = onSubmit.mock.calls[0][0] as ColacionInput;
+    expect(Object.keys(input.items[0])).not.toContain('nota');
+    expect(JSON.stringify(input)).not.toContain('undefined');
+  });
+
+  it('con nota, el item sí la incluye', async () => {
+    const onSubmit = vi.fn(async (_input: ColacionInput): Promise<void> => {});
+    render(<ColacionForm productos={productos} onSubmit={onSubmit} onCancel={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText(/Nombre/), { target: { value: 'Menú con nota' } });
+
+    fireEvent.change(screen.getByDisplayValue('— Producto del catálogo —'), { target: { value: 'f1' } });
+    fireEvent.change(screen.getByPlaceholderText('nota opcional'), { target: { value: 'sin sal' } });
+    fireEvent.click(screen.getByText('Agregar'));
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Guardar colación'));
+    });
+    await vi.waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+
+    const input = onSubmit.mock.calls[0][0] as ColacionInput;
+    expect(input.items[0].nota).toBe('sin sal');
   });
 
   it('no permite agregar más de un item con rol agregado', async () => {

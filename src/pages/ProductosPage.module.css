@@ -1,6 +1,0 @@
-/* El encabezado vive ahora en components/PageHeader — una sola jerarquía
-   tipográfica para las cuatro páginas. */
-
-.formWrapper {
-  margin-bottom: var(--space-6);
-}

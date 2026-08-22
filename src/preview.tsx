@@ -2,13 +2,16 @@
 // Renderiza las vistas con datos falsos, sin Firebase ni sesión, para revisar
 // jerarquía, densidad y estados sin tener que iniciar sesión con Google.
 // Se sirve solo en dev (`vite`), en /preview.html — no entra al build.
-import React from 'react';
+import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import '@fontsource-variable/plus-jakarta-sans';
 import './styles/global.css';
 import { ProductoList } from './components/ProductoList';
 import { PedidoList } from './components/PedidoList';
 import { PageHeader } from './components/PageHeader';
+import { Drawer } from './components/Drawer';
+import { ProductoForm } from './components/ProductoForm';
+import { PedidoForm } from './components/PedidoForm';
 import type { Pedido, Producto } from './types';
 
 const productos: Producto[] = [
@@ -61,12 +64,27 @@ const pedidos: Pedido[] = [
 const noop = () => {};
 
 export function Preview() {
+  const [drawerAbierto, setDrawerAbierto] = useState(false);
+  const [drawerPedido, setDrawerPedido] = useState(false);
+
   return (
     <div style={{ maxWidth: 1240, margin: '0 auto', padding: 'var(--space-8) var(--space-6)' }}>
+      <Drawer
+        open={drawerAbierto}
+        onOpenChange={setDrawerAbierto}
+        title="Nuevo producto"
+      >
+        <ProductoForm onSubmit={async () => setDrawerAbierto(false)} onCancel={() => setDrawerAbierto(false)} />
+      </Drawer>
+
       <PageHeader
         titulo="Productos"
         descripcion="El catálogo, agrupado por categoría. Cada color viene del alimento: tomate, lechuga, choclo, betarraga, palta, agua."
-        acciones={<button className="primary">Nuevo producto</button>}
+        acciones={
+          <button className="primary" onClick={() => setDrawerAbierto(true)}>
+            Nuevo producto
+          </button>
+        }
       />
       <ProductoList productos={productos} loading={false} error={null} onEdit={noop} onDelete={noop} />
 
@@ -75,8 +93,27 @@ export function Preview() {
       <PageHeader
         titulo="Pedidos"
         descripcion="Tablero por estado: cada pedido avanza de Creado a Entregado siguiendo las transiciones válidas."
-        acciones={<button className="primary">Nuevo pedido</button>}
+        acciones={
+          <button className="primary" onClick={() => setDrawerPedido(true)}>
+            Nuevo pedido
+          </button>
+        }
       />
+      <Drawer
+        open={drawerPedido}
+        onOpenChange={setDrawerPedido}
+        title="Nuevo pedido"
+        ancho="min(600px, 100vw)"
+      >
+        <PedidoForm
+          productos={productos}
+          colaciones={[]}
+          clientes={[{ id: 'c1', direccion: 'Av. Balmaceda 1240', contacto: '+56 9 1234 5678', nombre: 'Constructora Andes' }]}
+          onSubmit={async () => setDrawerPedido(false)}
+          onCancel={() => setDrawerPedido(false)}
+        />
+      </Drawer>
+
       <PedidoList
         pedidos={pedidos}
         loading={false}
@@ -90,7 +127,18 @@ export function Preview() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+// El HMR de Vite reejecuta este módulo al editarlo. Sin cachear la raíz se
+// crea una segunda y las dos pelean por el mismo nodo (`removeChild` falla).
+// Es un problema del banco de pruebas, no del producto — pero ensucia la
+// consola justo cuando la estás usando para verificar el producto.
+const container = document.getElementById('root')!;
+declare global {
+  interface Window {
+    __previewRoot?: ReactDOM.Root;
+  }
+}
+const root = (window.__previewRoot ??= ReactDOM.createRoot(container));
+root.render(
   <React.StrictMode>
     <Preview />
   </React.StrictMode>,

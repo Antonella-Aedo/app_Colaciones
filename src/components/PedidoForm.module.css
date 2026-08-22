@@ -1,195 +1,385 @@
+/* Vive dentro de un Drawer: el panel aporta fondo, padding y título.
+   Cero hex literales — cada bloque informativo usa el token semántico que le
+   corresponde: info para contexto, warning para avisos, success para precarga. */
+
 .form {
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
-  max-width: 560px;
-  background: var(--color-surface);
-  padding: 1.2rem;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  gap: var(--space-4);
 }
 
-.title {
-  margin: 0 0 0.3rem;
-  font-size: 1.1rem;
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-4);
+  border: none;
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  box-shadow: var(--elev-flat);
+}
+
+.sectionTitle {
+  padding: 0;
+  margin-bottom: var(--space-1);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* --- Toggle de modo cliente (existente / nuevo) --------------------------- */
+
+.modoCliente {
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  background: var(--surface-1);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-hairline);
+}
+
+.modoTab {
+  flex: 1;
+  min-height: 32px;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-xs);
+  box-shadow: none;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease-out), color var(--dur) var(--ease-out);
+}
+
+.modoTab[data-activo='true'] {
+  background: var(--surface-2);
+  color: var(--text-primary);
+  box-shadow: var(--elev-flat);
+}
+
+.modoTab:hover:not([data-activo='true']) {
+  color: var(--text-primary);
+  background: var(--surface-hover);
 }
 
 .row {
   display: flex;
-  gap: 0.9rem;
+  gap: var(--space-3);
   flex-wrap: wrap;
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: var(--space-1);
   flex: 1;
-  min-width: 180px;
-  font-size: 0.9rem;
-  color: var(--color-muted);
+  min-width: 140px;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-secondary);
 }
+
+.field input,
+.field select {
+  background: var(--surface-1);
+}
+
+/* --- Bloques informativos (mismo patrón, distinto significado) ------------- */
 
 .clienteInfo {
   display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  font-size: 0.82rem;
-  color: var(--color-muted);
-  background: #f0f4ff;
-  padding: 0.5rem 0.7rem;
-  border-radius: var(--radius);
-  border-left: 3px solid #4472C4;
-}
-
-.entregaGroup {
-  border: 1px solid #e5e7eb;
-  border-radius: var(--radius);
-  padding: 0.7rem 0.9rem;
-  margin: 0;
-  display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-caption);
+  color: var(--info);
+  background: var(--info-soft);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--info);
 }
 
-.entregaLegend {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-muted);
-  padding: 0 0.4rem;
+.aviso {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--warning);
+  background: var(--warning-soft);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--warning);
 }
 
-.radioOption {
+.precarga {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  color: inherit;
-  cursor: pointer;
-}
-
-.radioOption input[type='radio'] {
-  cursor: pointer;
-}
-
-.addItem {
-  display: flex;
-  gap: 0.5rem;
+  gap: var(--space-2);
   align-items: flex-end;
+  flex-wrap: wrap;
+  padding: var(--space-3);
+  background: var(--success-soft);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--success);
 }
 
-.addItem select {
-  flex: 1;
-}
-
-.cant {
-  width: 80px;
-}
-
-.items {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.items li {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  justify-content: space-between;
-  padding: 0.5rem 0.7rem;
-  background: #f9fafb;
-  border-radius: var(--radius);
-}
-
-.items li span:first-child {
-  flex: 1;
-}
-
-.itemInfo {
-  display: flex;
-  flex-direction: column;
-}
-
-.itemInfo small {
-  color: var(--color-muted);
-  font-size: 0.8rem;
-}
-
-.rol {
-  color: var(--color-muted);
-  font-size: 0.8rem;
+.precarga .field {
+  color: var(--success);
 }
 
 .personalizacion {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  padding: 0.8rem;
-  background: #f0f4ff;
-  border-radius: var(--radius);
-  border-left: 3px solid #4472C4;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--info-soft);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--info);
 }
 
 .personalizacionLabel {
-  font-size: 0.85rem;
-  color: var(--color-muted);
-  font-weight: 600;
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--info);
 }
 
-.precarga {
+/* --- Tipo de entrega ------------------------------------------------------ */
+
+.entregaGroup {
   display: flex;
-  gap: 0.5rem;
-  align-items: flex-end;
-  padding: 0.8rem;
-  background: #f0fdf4;
-  border-radius: var(--radius);
-  border-left: 3px solid #16a34a;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  background: var(--surface-1);
 }
+
+.entregaLegend {
+  padding: 0 var(--space-1);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.radioOption {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.radioOption input[type='radio'] {
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  accent-color: var(--brand-600);
+  cursor: pointer;
+}
+
+/* --- Tarjeta de menú (bandeja) -------------------------------------------- */
+/* Cada menú es una sub-tarjeta dentro de la sección de composición.
+   Fondo, agregado y ensalada son selects opcionales; los extras son
+   bebidas/cremas/otros que se añaden con cantidad. */
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  box-shadow: var(--elev-flat);
+}
+
+.menuHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.menuTitulo {
+  padding: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+}
+
+.menuQuitar {
+  min-height: 28px;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-semibold);
+  color: var(--danger);
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.menuQuitar:hover:not(:disabled) {
+  background: var(--danger-soft);
+}
+
+/* --- Extras (bebidas, cremas, otros) --------------------------------------- */
+
+.extras {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-soft);
+}
+
+.extrasLabel {
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.extraLista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.extraItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-2);
+  border-radius: var(--radius-xs);
+  font-size: var(--text-xs);
+}
+
+.extraInfo {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-secondary);
+  font-weight: var(--weight-medium);
+}
+
+.extraPrecio {
+  flex: none;
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.addExtra {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.addExtra select {
+  flex: 1;
+  min-width: 120px;
+  background: var(--surface-1);
+}
+
+/* --- Botón añadir menú ----------------------------------------------------- */
+
+.addMenu {
+  min-height: 36px;
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  color: var(--brand-700);
+  border: 1px dashed var(--brand-300);
+  border-radius: var(--radius-sm);
+  background: var(--brand-50);
+  box-shadow: none;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease-out);
+}
+
+.addMenu:hover:not(:disabled) {
+  background: var(--brand-100);
+}
+
+/* --- Resumen: el total es el elemento focal ------------------------------- */
 
 .total {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 0.2rem;
-  font-size: 0.9rem;
-  color: var(--color-muted);
+  gap: var(--space-1);
+  padding: var(--space-4);
+  background: var(--surface-2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-flat);
 }
 
-.total strong {
-  font-size: 1.1rem;
-  color: inherit;
+.totalLinea {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.totalFinal {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: var(--space-1);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-hairline);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.totalFinal span {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--track-tight);
+  text-transform: none;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
 }
 
 .error {
-  color: var(--color-danger);
   margin: 0;
-  font-size: 0.9rem;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-radius: var(--radius-sm);
 }
 
 .actions {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
 }
 
 @media (max-width: 600px) {
-  .addItem {
-    flex-wrap: wrap;
-  }
   .cant {
     width: 100%;
   }
-}
-
-.aviso {
-  background: #fff3cd;
-  color: #856404;
-  border: 1px solid #ffc107;
-  border-radius: 4px;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-  margin: 0;
 }

@@ -41,6 +41,8 @@ Inputs hundidos (`--surface-sunken`).
 | Carril del tablero | `minmax(288px, 1fr)` · scroll horizontal · apila bajo 900px |
 | Métrica | label 11px/600 mayúscula muted · valor 28px/700 tabular · meta 12px terciario |
 | PageHeader | título 28px/700 · descripción 14px terciario · margen inferior 24 |
+| Drawer | `direction="left"` (Vaul) · ancho `min(480px,100vw)`, 600 en Pedidos · header sticky 56px con `Drawer.Title` · body con scroll · `--surface-1` + `--elev-3` · `--radius-xl` solo en el borde derecho · `100vw` bajo 600px |
+| Sección de formulario | `<fieldset>` sin borde · `--surface-2` · pad 16 · radio `--radius-lg` · `<legend>` 11px/700 mayúscula `--track-wide` `--text-muted` |
 
 ## Reglas duras
 1. Ningún color/radio/espacio literal en un CSS module. Siempre `var(--…)`.
@@ -50,6 +52,19 @@ Inputs hundidos (`--surface-sunken`).
 4. Toda vista de datos necesita: loading (skeleton), vacío real, vacío por
    filtro, y error.
 5. El color nunca porta información solo: siempre acompañado de su etiqueta.
+6. **Toda creación/edición de entidad se abre en un Drawer.** No hay formularios
+   inline. El `<form>` no lleva fondo ni sombra propios — sería una card dentro
+   de otra.
+7. **El título vive en el Drawer, nunca en el `<form>`.** El encabezado es chrome
+   del panel. Un prop `titulo` en el form que se oculta dentro del drawer deja el
+   camino probado por los tests fuera de producción.
+8. **No reescribir la animación de Vaul.** Ya trae `slideFromLeft` / `fadeIn` y
+   sus selectores ganan en especificidad; escribir keyframes propios los deja a
+   medio aplicar. Se ajusta solo `animation-duration` / `animation-timing-function`,
+   y **solo en la apertura**: Vaul ata el desmontaje del nodo a la duración de
+   cierre.
+9. **Foco en el drawer**: `onOpenAutoFocus={(e) => e.preventDefault()}` para que
+   gane el `autoFocus` del primer campo en vez del foco al panel.
 
 ## Banco de pruebas
 `preview.html` + `src/preview.tsx` — vistas con datos falsos, sin Firebase.

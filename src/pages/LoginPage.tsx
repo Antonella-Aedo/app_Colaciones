@@ -1,11 +1,17 @@
 import { useState } from 'react';
+import { Navigate } from 'react-router';
 import { useAuth } from '../firebase/auth';
 import styles from './LoginPage.module.css';
 
 export function LoginPage() {
-  const { loginWithGoogle, authError } = useAuth();
+  const { user, loginWithGoogle, authError } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+
+  // Si ya hay sesión (login exitoso o sesión persistida), salir del login.
+  if (user) {
+    return <Navigate to="/" replace />;
+  }
 
   const handleGoogleLogin = async () => {
     setError(null);

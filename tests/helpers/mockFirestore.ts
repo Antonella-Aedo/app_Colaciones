@@ -29,6 +29,34 @@ interface FakeQuery { __collection: string; __filters: FakeFilter[]; }
 
 vi.mock('firebase/firestore', () => {
   const { getCollection } = hoisted;
+
+  /**
+   * Replica la validacion del SDK real: Firestore RECHAZA cualquier valor
+   * `undefined` (a cualquier profundidad) con
+   *   "Unsupported field value: undefined (found in field X in document Y)".
+   * El mock antes lo aceptaba en silencio, asi que los tests pasaban con
+   * payloads que reventaban en produccion. Recorre objetos y arrays igual
+   * que el SDK.
+   */
+  function rechazarUndefined(value: unknown, ref: FakeDocRef | FakeColRef, path = ''): void {
+    if (value === undefined) {
+      const doc = 'col' in ref ? `${ref.col}/${ref.id}` : ref.id;
+      throw new Error(
+        `Function set() called with invalid data. Unsupported field value: undefined` +
+          `${path ? ` (found in field ${path})` : ''} (found in document ${doc})`,
+      );
+    }
+    if (Array.isArray(value)) {
+      value.forEach((v, i) => rechazarUndefined(v, ref, `${path}[${i}]`));
+      return;
+    }
+    if (value && typeof value === 'object') {
+      for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+        rechazarUndefined(v, ref, path ? `${path}.${k}` : k);
+      }
+    }
+  }
+
   return {
     collection: (_db: unknown, name: string): FakeColRef => ({ id: name }),
     // Soporta dos formas: doc(db, col, id) y doc(collectionRef) (auto-id).
@@ -73,14 +101,17 @@ vi.mock('firebase/firestore', () => {
       return { id: ref.id, data: () => ({ ...col.get(ref.id)! }), exists: () => true as const };
     },
     addDoc: async (ref: FakeColRef, data: DocData) => {
+      rechazarUndefined(data, ref);
       const id = `auto-${Math.random().toString(36).slice(2, 9)}`;
       getCollection(ref.id).set(id, { ...data });
       return { id, col: ref.id } as FakeDocRef;
     },
     setDoc: async (ref: FakeDocRef, data: DocData) => {
+      rechazarUndefined(data, ref);
       getCollection(ref.col).set(ref.id, { ...data });
     },
     updateDoc: async (ref: FakeDocRef, data: Partial<DocData>) => {
+      rechazarUndefined(data, ref);
       const col = getCollection(ref.col);
       if (!col.has(ref.id)) return;
       const existing = col.get(ref.id)!;
@@ -110,9 +141,11 @@ vi.mock('firebase/firestore', () => {
       const ops: Array<() => void> = [];
       return {
         set: (ref: FakeDocRef, data: DocData) => {
+          rechazarUndefined(data, ref);
           ops.push(() => getCollection(ref.col).set(ref.id, { ...data }));
         },
         update: (ref: FakeDocRef, data: Partial<DocData>) => {
+          rechazarUndefined(data, ref);
           ops.push(() => {
             const col = getCollection(ref.col);
             if (!col.has(ref.id)) return;

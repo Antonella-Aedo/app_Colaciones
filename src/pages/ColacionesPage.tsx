@@ -3,6 +3,7 @@ import { useColaciones } from '../hooks/useColaciones';
 import { useProductos } from '../hooks/useProductos';
 import { ColacionForm } from '../components/ColacionForm';
 import { PageHeader } from '../components/PageHeader';
+import { Drawer } from '../components/Drawer';
 import { ColacionList } from '../components/ColacionList';
 import type { Colacion, ColacionInput } from '../types';
 
@@ -25,7 +26,6 @@ export function ColacionesPage() {
       await create(input);
     }
     setMostrandoForm(false);
-    setEditando(null);
   };
 
   const editar = (c: Colacion) => {
@@ -38,10 +38,10 @@ export function ColacionesPage() {
     setMostrandoForm(true);
   };
 
-  const cancelar = () => {
-    setMostrandoForm(false);
-    setEditando(null);
-  };
+  // No se limpia `editando` al cerrar: Vaul mantiene el contenido montado
+  // durante la animación de salida y el formulario parpadearía a vacío. Cada
+  // camino de apertura fija `editando` explícitamente.
+  const cancelar = () => setMostrandoForm(false);
 
   const eliminar = async (id: string) => {
     if (confirm('¿Eliminar esta colación?')) {
@@ -66,36 +66,36 @@ export function ColacionesPage() {
         titulo="Colaciones"
         descripcion="El menú del día: fondo, agregado y ensalada armados como una bandeja. Solo una colación puede estar activa a la vez."
         acciones={
-          !mostrandoForm && (
-            <button className="primary" onClick={nuevo}>
-              Nueva colación
-            </button>
-          )
+          <button className="primary" onClick={nuevo}>
+            Nueva colación
+          </button>
         }
       />
 
-      {mostrandoForm && (
-        <div style={{ marginBottom: 'var(--space-6)' }}>
-          <ColacionForm
-            productos={productos}
-            inicial={editando}
-            onSubmit={handleSubmit}
-            onCancel={cancelar}
-          />
-        </div>
-      )}
-
-      {(!mostrandoForm || colaciones.length > 0 || loading || error) && (
-        <ColacionList
-          colaciones={colaciones}
-          productosMap={productosMap}
-          onEdit={editar}
-          onDelete={eliminar}
-          onActivar={toggleActiva}
-          loading={loading}
-          error={error}
+      <Drawer
+        open={mostrandoForm}
+        onOpenChange={(open) => {
+          if (!open) cancelar();
+        }}
+        title={editando ? 'Editar colación' : 'Nueva colación'}
+      >
+        <ColacionForm
+          productos={productos}
+          inicial={editando}
+          onSubmit={handleSubmit}
+          onCancel={cancelar}
         />
-      )}
+      </Drawer>
+
+      <ColacionList
+        colaciones={colaciones}
+        productosMap={productosMap}
+        onEdit={editar}
+        onDelete={eliminar}
+        onActivar={toggleActiva}
+        loading={loading}
+        error={error}
+      />
     </div>
   );
 }

@@ -6,16 +6,18 @@ import { useClientes } from '../hooks/useClientes';
 import { PedidoList } from '../components/PedidoList';
 import { PedidoForm } from '../components/PedidoForm';
 import { PageHeader } from '../components/PageHeader';
-import type { EstadoPedido, Pedido, PedidoInput } from '../types';
+import { Drawer } from '../components/Drawer';
+import type { ClienteInput, EstadoPedido, Pedido, PedidoInput } from '../types';
 import styles from './PedidosPage.module.css';
 
 export function PedidosPage() {
   const { pedidos, loading, error, create, update, remove, changeEstado, confirmarPago, verificarDireccion } = usePedidos();
   const { productos } = useProductos();
   const { colaciones } = useColaciones();
-  const { clientes } = useClientes();
+  const { clientes, findOrCreate } = useClientes();
   const [mostrandoForm, setMostrandoForm] = useState(false);
   const [editando, setEditando] = useState<Pedido | null>(null);
+  const [errorEstado, setErrorEstado] = useState<string | null>(null);
 
   const handleSubmit = async (input: PedidoInput) => {
     if (editando) {
@@ -24,8 +26,12 @@ export function PedidosPage() {
       await create(input);
     }
     setMostrandoForm(false);
-    setEditando(null);
   };
+
+  // No se limpia `editando` al cerrar: Vaul mantiene el contenido montado
+  // durante la animación de salida y el formulario parpadearía a vacío. Cada
+  // camino de apertura fija `editando` explícitamente.
+  const cerrarForm = () => setMostrandoForm(false);
 
   const handleEdit = (p: Pedido) => {
     setEditando(p);
@@ -37,12 +43,26 @@ export function PedidosPage() {
     await remove(id);
   };
 
-  const handleChangeEstado = (id: string, estado: EstadoPedido) => {
-    void changeEstado(id, estado);
+  const handleChangeEstado = async (id: string, estado: EstadoPedido) => {
+    setErrorEstado(null);
+    try {
+      await changeEstado(id, estado);
+    } catch (err) {
+      setErrorEstado(err instanceof Error ? err.message : 'No se pudo cambiar el estado');
+    }
   };
 
-  const handleConfirmarPago = (id: string) => {
-    void confirmarPago(id);
+  const handleConfirmarPago = async (id: string) => {
+    setErrorEstado(null);
+    try {
+      await confirmarPago(id);
+    } catch (err) {
+      setErrorEstado(err instanceof Error ? err.message : 'No se pudo confirmar el pago');
+    }
+  };
+
+  const handleCrearCliente = async (input: ClienteInput) => {
+    return findOrCreate(input);
   };
 
   return (
@@ -51,36 +71,44 @@ export function PedidosPage() {
         titulo="Pedidos"
         descripcion="Tablero por estado: cada pedido avanza de Creado a Entregado siguiendo las transiciones válidas."
         acciones={
-          !mostrandoForm && (
-            <button
-              className="primary"
-              onClick={() => {
-                setEditando(null);
-                setMostrandoForm(true);
-              }}
-            >
-              Nuevo pedido
-            </button>
-          )
+          <button
+            className="primary"
+            onClick={() => {
+              setEditando(null);
+              setMostrandoForm(true);
+            }}
+          >
+            Nuevo pedido
+          </button>
         }
       />
 
-      {mostrandoForm && (
-        <div className={styles.formWrapper}>
-          <PedidoForm
-            inicial={editando}
-            productos={productos}
-            colaciones={colaciones}
-            clientes={clientes}
-            onSubmit={handleSubmit}
-            onVerificarDireccion={verificarDireccion}
-            onCancel={() => {
-              setMostrandoForm(false);
-              setEditando(null);
-            }}
-          />
-        </div>
+      {errorEstado && (
+        <p role="alert" className={styles.errorEstado}>
+          {errorEstado}
+        </p>
       )}
+
+      <Drawer
+        open={mostrandoForm}
+        onOpenChange={(open) => {
+          if (!open) cerrarForm();
+        }}
+        title={editando ? 'Editar pedido' : 'Nuevo pedido'}
+        ancho="min(600px, 100vw)"
+      >
+        <PedidoForm
+          key={editando?.id ?? 'nuevo'}
+          inicial={editando}
+          productos={productos}
+          colaciones={colaciones}
+          clientes={clientes}
+          onSubmit={handleSubmit}
+          onVerificarDireccion={verificarDireccion}
+          onCrearCliente={handleCrearCliente}
+          onCancel={cerrarForm}
+        />
+      </Drawer>
 
       <PedidoList
         pedidos={pedidos}
