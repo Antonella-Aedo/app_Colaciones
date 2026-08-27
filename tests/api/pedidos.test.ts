@@ -67,8 +67,8 @@ describe('api/pedidos (Firestore)', () => {
 
   it('updatePedido rechaza transición inválida', async () => {
     const creado = await createPedido(pedidoInput);
-    // creado → entregando no es válida (debe pasar por pagado/programado/entregando)
-    await expect(updatePedido(creado.id, { ...pedidoInput, estado: 'entregando' })).rejects.toThrow();
+    // creado → finalizado no es válida (debe pasar por pagado)
+    await expect(updatePedido(creado.id, { ...pedidoInput, estado: 'finalizado' })).rejects.toThrow();
   });
 });
 
@@ -127,28 +127,24 @@ describe('api/pedidos (cambiarEstadoPedido con auditoría)', () => {
 
   it('rechaza transición inválida', async () => {
     const creado = await createPedido(pedidoInput);
-    await expect(cambiarEstadoPedido(creado.id, 'entregado', 'ana@test.com')).rejects.toThrow();
+    await expect(cambiarEstadoPedido(creado.id, 'finalizado', 'ana@test.com')).rejects.toThrow();
   });
 });
 
 describe('api/pedidos (bloqueo edición/eliminación)', () => {
-  it('updatePedido rechaza edición si estado=entregado', async () => {
+  it('updatePedido rechaza edición si estado=finalizado', async () => {
     const creado = await createPedido(pedidoInput);
-    // Avanzar por el flujo: creado → pagado → programado → entregando → entregado
+    // Avanzar por el flujo: creado → pagado → finalizado
     await cambiarEstadoPedido(creado.id, 'pagado', 'ana@test.com');
-    await cambiarEstadoPedido(creado.id, 'programado', 'ana@test.com');
-    await cambiarEstadoPedido(creado.id, 'entregando', 'ana@test.com');
-    await cambiarEstadoPedido(creado.id, 'entregado', 'ana@test.com');
+    await cambiarEstadoPedido(creado.id, 'finalizado', 'ana@test.com');
 
     await expect(updatePedido(creado.id, { ...pedidoInput, clienteNombre: 'Pedro' })).rejects.toThrow();
   });
 
-  it('deletePedido rechaza eliminación si estado=entregado', async () => {
+  it('deletePedido rechaza eliminación si estado=finalizado', async () => {
     const creado = await createPedido(pedidoInput);
     await cambiarEstadoPedido(creado.id, 'pagado', 'ana@test.com');
-    await cambiarEstadoPedido(creado.id, 'programado', 'ana@test.com');
-    await cambiarEstadoPedido(creado.id, 'entregando', 'ana@test.com');
-    await cambiarEstadoPedido(creado.id, 'entregado', 'ana@test.com');
+    await cambiarEstadoPedido(creado.id, 'finalizado', 'ana@test.com');
 
     await expect(deletePedido(creado.id)).rejects.toThrow();
   });
@@ -186,6 +182,31 @@ describe('api/pedidos (validación runtime)', () => {
     const creado = await createPedido(pedidoInput);
     const invalido = { ...pedidoInput, estado: 'foo' as never };
     await expect(updatePedido(creado.id, invalido)).rejects.toThrow();
+  });
+});
+
+describe('api/pedidos (cliente no guardado)', () => {
+  it('createPedido acepta clienteId vacío (cliente no persistido)', async () => {
+    const input: PedidoInput = {
+      ...pedidoInput,
+      clienteId: '',
+      clienteNombre: null,
+      clienteDireccion: 'Av. Siempre Viva 742',
+      clienteContacto: '+56912345678',
+    };
+    const creado = await createPedido(input);
+    expect(creado.id).toBeTruthy();
+    expect(creado.clienteId).toBe('');
+    expect(creado.clienteDireccion).toBe('Av. Siempre Viva 742');
+
+    const persistido = await getPedido(creado.id);
+    expect(persistido?.clienteId).toBe('');
+  });
+
+  it('updatePedido acepta clienteId vacío', async () => {
+    const creado = await createPedido({ ...pedidoInput, clienteId: '' });
+    const actualizado = await updatePedido(creado.id, { ...pedidoInput, clienteId: '' });
+    expect(actualizado.clienteId).toBe('');
   });
 });
 

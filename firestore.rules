@@ -192,8 +192,7 @@ service cloud.firestore {
     //   items:                 list (array de PedidoItem)
     //   total:                 number, >= 0
     //   estado:                string, uno de:
-    //                            creado | pagado | programado |
-    //                            entregando | entregado | cancelado
+    //                            creado | pagado | finalizado | cancelado
     //   tipoEntrega:           string, uno de: delivery | retiro
     //   deliveryCost:          number, >= 0
     //   metodoPago:            string, uno de: efectivo | tarjeta | transferencia
@@ -209,8 +208,8 @@ service cloud.firestore {
 
     function isValidEstado(v) {
       return isString(v)
-        && (v == 'creado' || v == 'pagado' || v == 'programado'
-          || v == 'entregando' || v == 'entregado' || v == 'cancelado');
+        && (v == 'creado' || v == 'pagado' || v == 'finalizado'
+          || v == 'cancelado');
     }
 
     function isValidTipoEntrega(v) {
@@ -309,7 +308,7 @@ service cloud.firestore {
     // ---------------------------------------------------------------------
     // Reglas de colección — pedidos
     // ---------------------------------------------------------------------
-    // Req 5: una vez que un pedido está 'entregado' no puede editarse ni
+    // Req 5: una vez que un pedido está 'finalizado' no puede editarse ni
     // eliminarse (bloqueo a nivel de reglas; la app también debe ocultar
     // las acciones de edición/borrado en ese estado).
 
@@ -317,9 +316,9 @@ service cloud.firestore {
       allow read:   if isAuthedAdmin();
       allow create: if isAuthedAdmin() && pedidoValido();
       allow update: if isAuthedAdmin() && pedidoValido()
-        && resource.data.estado != 'entregado';  // no editar si entregado
+        && resource.data.estado != 'finalizado';  // no editar si finalizado
       allow delete: if isAuthedAdmin()
-        && resource.data.estado != 'entregado';  // no eliminar si entregado
+        && resource.data.estado != 'finalizado';  // no eliminar si finalizado
     }
 
     // ---------------------------------------------------------------------

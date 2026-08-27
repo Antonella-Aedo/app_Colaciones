@@ -1,0 +1,44 @@
+- [ ] Task 1: Actualizar tests/utils/pedidoEstado.test.ts al flujo de 4 estados
+  - Acceptance: 4 estados, transiciones creado→{pagado,cancelado}, pagado→{finalizado,cancelado}, terminales finalizado/cancelado
+  - Verify: npm test -- tests/utils/pedidoEstado.test.ts (debe fallar)
+  - Files: tests/utils/pedidoEstado.test.ts
+- [ ] Task 2: Actualizar tests/api/pedidos.test.ts al flujo de 4 estados
+  - Acceptance: tests usan finalizado en lugar de entregado; bloqueo por finalizado
+  - Verify: npm test -- tests/api/pedidos.test.ts (debe fallar)
+  - Files: tests/api/pedidos.test.ts
+- [ ] Task 3: Actualizar tests/rules/firestore.rules.test.ts al flujo de 4 estados
+  - Acceptance: isValidEstado acepta 4 estados; bloqueo por finalizado
+  - Verify: npm run test:rules (debe fallar)
+  - Files: tests/rules/firestore.rules.test.ts
+- [ ] Task 4: Actualizar src/types/index.ts (EstadoPedido)
+  - Acceptance: EstadoPedido = creado|pagado|finalizado|cancelado
+  - Verify: tsc --noEmit
+  - Files: src/types/index.ts
+- [ ] Task 5: Actualizar src/api/schemas.ts (EstadoPedidoSchema)
+  - Acceptance: Zod enum con 4 valores
+  - Verify: npm test
+  - Files: src/api/schemas.ts
+- [ ] Task 6: Actualizar src/utils/pedidoEstado.ts (transiciones, terminales, labels)
+  - Acceptance: TRANSICIONES_VALIDAS, esTerminal, esEliminable, ESTADO_LABELS, ESTADOS_PEDIDO con 4 estados
+  - Verify: npm test -- tests/utils/pedidoEstado.test.ts (pasa)
+  - Files: src/utils/pedidoEstado.ts
+- [ ] Task 7: Actualizar firestore.rules (isValidEstado + bloqueo por finalizado)
+  - Acceptance: isValidEstado valida 4 estados; update/delete bloqueados si finalizado
+  - Verify: npm run test:rules (pasa)
+  - Files: firestore.rules
+- [ ] Task 8: Actualizar src/styles/global.css (tokens de estado)
+  - Acceptance: tokens --estado-finalizado; sin tokens programado/entregando/entregado
+  - Verify: npm run build
+  - Files: src/styles/global.css
+- [ ] Task 9: Actualizar src/components/PedidoList.module.css (selectores data-estado)
+  - Acceptance: selectores para creado/pagado/finalizado/cancelado
+  - Verify: npm run build
+  - Files: src/components/PedidoList.module.css
+- [ ] Task 10: Actualizar src/preview.tsx (datos de muestra)
+  - Acceptance: pedidos de muestra usan solo los 4 estados
+  - Verify: npm run build
+  - Files: src/preview.tsx
+- [ ] Task 11: Actualizar src/pages/PedidosPage.tsx (copy del header)
+  - Acceptance: descripcion menciona finalizado, no entregado
+  - Verify: npm run build
+  - Files: src/pages/PedidosPage.tsx

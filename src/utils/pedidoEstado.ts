@@ -5,16 +5,14 @@ import type { EstadoPedido } from '../types';
 // Transiciones válidas: desde → [hacia...]
 export const TRANSICIONES_VALIDAS: Record<EstadoPedido, EstadoPedido[]> = {
   creado: ['pagado', 'cancelado'],
-  pagado: ['programado', 'cancelado'],
-  programado: ['entregando', 'cancelado'],
-  entregando: ['entregado', 'programado'],
-  entregado: [],
+  pagado: ['finalizado', 'cancelado'],
+  finalizado: [],
   cancelado: [],
 };
 
 // Estados terminales (no se puede cambiar a otro estado)
 export function esTerminal(estado: EstadoPedido): boolean {
-  return estado === 'entregado' || estado === 'cancelado';
+  return estado === 'finalizado' || estado === 'cancelado';
 }
 
 // ¿Se puede transicionar de `de` a `a`?
@@ -30,25 +28,21 @@ export function esEditable(estado: EstadoPedido): boolean {
 
 // ¿Se puede eliminar el pedido?
 export function esEliminable(estado: EstadoPedido): boolean {
-  // entregado: no eliminable. cancelado: eliminable. resto: eliminable.
-  return estado !== 'entregado';
+  // finalizado: no eliminable. cancelado: eliminable. resto: eliminable.
+  return estado !== 'finalizado';
 }
 
 // Labels legibles en español para la UI
 export const ESTADO_LABELS: Record<EstadoPedido, string> = {
   creado: 'Creado',
   pagado: 'Pagado',
-  programado: 'Programado',
-  entregando: 'Entregando',
-  entregado: 'Entregado',
+  finalizado: 'Finalizado',
   cancelado: 'Cancelado',
 };
 
 export const ESTADOS_PEDIDO: EstadoPedido[] = [
   'creado',
   'pagado',
-  'programado',
-  'entregando',
-  'entregado',
+  'finalizado',
   'cancelado',
 ];

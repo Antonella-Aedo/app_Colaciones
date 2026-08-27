@@ -211,6 +211,9 @@ export function PedidoForm({
 }: Props) {
   // --- Cliente ---
   const [modoCliente, setModoCliente] = useState<'existente' | 'nuevo'>('existente');
+  // Solo aplica al crear (no al editar): si false, el cliente nuevo NO se
+  // persiste en la colección clientes; el pedido vive solo con sus snapshots.
+  const [guardarCliente, setGuardarCliente] = useState(false);
   const [clienteId, setClienteId] = useState<string>(inicial?.clienteId ?? '');
   const [clienteNombre, setClienteNombre] = useState<string | null>(inicial?.clienteNombre ?? null);
   const [clienteDireccion, setClienteDireccion] = useState<string>(inicial?.clienteDireccion ?? '');
@@ -375,20 +378,28 @@ export function PedidoForm({
           setGuardando(false);
           return;
         }
-        if (!onCrearCliente) {
-          setError('No se puede crear un cliente nuevo desde aquí');
-          setGuardando(false);
-          return;
+        if (guardarCliente) {
+          if (!onCrearCliente) {
+            setError('No se puede crear un cliente nuevo desde aquí');
+            setGuardando(false);
+            return;
+          }
+          const nuevoCliente = await onCrearCliente({
+            nombre: clienteNombre?.trim() || null,
+            direccion: clienteDireccion.trim(),
+            contacto: clienteContacto.trim(),
+          });
+          idFinal = nuevoCliente.id;
+          nombreFinal = nuevoCliente.nombre ?? null;
+          dirFinal = nuevoCliente.direccion;
+          contFinal = nuevoCliente.contacto;
+        } else {
+          // No guardar el cliente en el catálogo: el pedido usa solo snapshots.
+          idFinal = '';
+          nombreFinal = clienteNombre?.trim() || null;
+          dirFinal = clienteDireccion.trim();
+          contFinal = clienteContacto.trim();
         }
-        const nuevoCliente = await onCrearCliente({
-          nombre: clienteNombre?.trim() || null,
-          direccion: clienteDireccion.trim(),
-          contacto: clienteContacto.trim(),
-        });
-        idFinal = nuevoCliente.id;
-        nombreFinal = nuevoCliente.nombre ?? null;
-        dirFinal = nuevoCliente.direccion;
-        contFinal = nuevoCliente.contacto;
       } else if (!idFinal) {
         setError('El cliente es obligatorio');
         setGuardando(false);
@@ -688,6 +699,17 @@ export function PedidoForm({
                 />
               </label>
             </div>
+            {/* Solo al crear: opción de no persistir el cliente en el catálogo. */}
+            {!inicial && (
+              <label className={styles.field}>
+                <input
+                  type="checkbox"
+                  checked={guardarCliente}
+                  onChange={(e) => setGuardarCliente(e.target.checked)}
+                />
+                Guardar cliente en el catálogo
+              </label>
+            )}
           </>
         )}
 

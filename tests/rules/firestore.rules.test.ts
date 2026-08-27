@@ -132,7 +132,7 @@ beforeEach(async () => {
     await setDoc(doc(db, 'colaciones', 'col-activa'), { ...colacionValida, activa: true });
     await setDoc(doc(db, 'clientes', 'c1'), clienteValido);
     await setDoc(doc(db, 'pedidos', 'ped1'), pedidoValido);
-    await setDoc(doc(db, 'pedidos', 'ped-entregado'), { ...pedidoValido, estado: 'entregado' });
+    await setDoc(doc(db, 'pedidos', 'ped-finalizado'), { ...pedidoValido, estado: 'finalizado' });
   });
 });
 
@@ -388,18 +388,18 @@ describe('PedidosPage', () => {
     );
   });
 
-  it('bloquea editar un pedido entregado (Req 5)', async () => {
+  it('bloquea editar un pedido finalizado (Req 5)', async () => {
     await assertFails(
-      setDoc(doc(asAdmin(), 'pedidos', 'ped-entregado'), {
+      setDoc(doc(asAdmin(), 'pedidos', 'ped-finalizado'), {
         ...pedidoValido,
-        estado: 'entregado',
+        estado: 'finalizado',
         total: 9999,
       }),
     );
   });
 
-  it('bloquea eliminar un pedido entregado (Req 5)', async () => {
-    await assertFails(deleteDoc(doc(asAdmin(), 'pedidos', 'ped-entregado')));
+  it('bloquea eliminar un pedido finalizado (Req 5)', async () => {
+    await assertFails(deleteDoc(doc(asAdmin(), 'pedidos', 'ped-finalizado')));
   });
 
   it('elimina un pedido no entregado (deletePedido)', async () => {
@@ -409,11 +409,11 @@ describe('PedidosPage', () => {
   it('cambiarEstadoPedido: updateDoc parcial + arrayUnion en historialEstados', async () => {
     await assertSucceeds(
       updateDoc(doc(asAdmin(), 'pedidos', 'ped1'), {
-        estado: 'programado',
+        estado: 'pagado',
         estadoActualizadoPor: ADMIN_EMAIL,
         estadoActualizadoEn: '2026-08-21T12:00:00.000Z',
         historialEstados: arrayUnion({
-          estado: 'programado',
+          estado: 'pagado',
           cambiadoPor: ADMIN_EMAIL,
           cambiadoEn: '2026-08-21T12:00:00.000Z',
         }),
@@ -448,7 +448,7 @@ describe('PedidosPage', () => {
     });
     await assertFails(
       updateDoc(doc(asAdmin(), 'pedidos', 'ped-legacy'), {
-        estado: 'programado',
+        estado: 'pagado',
         estadoActualizadoPor: ADMIN_EMAIL,
         estadoActualizadoEn: '2026-08-21T12:00:00.000Z',
       }),
@@ -458,6 +458,18 @@ describe('PedidosPage', () => {
   it('rechaza un pedido con estado fuera del enum', async () => {
     await assertFails(
       addDoc(collection(asAdmin(), 'pedidos'), { ...pedidoValido, estado: 'en_camino' }),
+    );
+  });
+
+  it('rechaza un pedido con estado legacy (programado)', async () => {
+    await assertFails(
+      addDoc(collection(asAdmin(), 'pedidos'), { ...pedidoValido, estado: 'programado' }),
+    );
+  });
+
+  it('rechaza un pedido con estado legacy (entregado)', async () => {
+    await assertFails(
+      addDoc(collection(asAdmin(), 'pedidos'), { ...pedidoValido, estado: 'entregado' }),
     );
   });
 

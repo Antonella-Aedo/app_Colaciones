@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import '../helpers/mockFirestore';
 import { PedidoForm } from '../../src/components/PedidoForm';
-import type { Producto, Colacion, Pedido, PedidoInput, Cliente } from '../../src/types';
+import type { Producto, Colacion, Pedido, PedidoInput, Cliente, ClienteInput } from '../../src/types';
 
 const productos: Producto[] = [
   { id: 'f1', nombre: 'Pescado frito', descripcion: '', precio: 6500, categoria: 'fondo', disponible: true },
@@ -286,5 +286,128 @@ describe('PedidoForm', () => {
     expect(screen.getAllByText(/Pescado frito/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Coca-Cola/).length).toBeGreaterThan(0);
     expect(screen.getByText('Guardar cambios')).toBeDefined();
+  });
+
+  it('en modo cliente nuevo, el checkbox "Guardar cliente" aparece desmarcado por defecto', () => {
+    render(
+      <PedidoForm
+        productos={productos}
+        colaciones={colaciones}
+        clientes={clientes}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole('tab', { name: /Crear cliente nuevo/i }));
+    const checkbox = screen.getByLabelText(/Guardar cliente en el catálogo/i);
+    expect(checkbox).toBeDefined();
+    expect((checkbox as HTMLInputElement).checked).toBe(false);
+  });
+
+  it('con checkbox desmarcado: NO llama onCrearCliente y envía clienteId vacío', async () => {
+    const onSubmit = vi.fn(async (_input: PedidoInput): Promise<void> => {});
+    const onCrearCliente = vi.fn(async (_input: ClienteInput): Promise<Cliente> => {
+      return { id: 'nuevo-1', direccion: 'x', contacto: 'y', nombre: null };
+    });
+    render(
+      <PedidoForm
+        productos={productos}
+        colaciones={[]}
+        clientes={clientes}
+        onSubmit={onSubmit}
+        onCancel={vi.fn()}
+        onCrearCliente={onCrearCliente}
+      />,
+    );
+
+    // Seleccionar un fondo (crea un item)
+    fireEvent.change(screen.getByLabelText(/Fondo/i), { target: { value: 'f1' } });
+
+    // Cambiar a modo cliente nuevo
+    fireEvent.click(screen.getByRole('tab', { name: /Crear cliente nuevo/i }));
+
+    // Llenar datos del cliente (dirección y contacto obligatorios)
+    fireEvent.change(screen.getByPlaceholderText(/Av. Siempre Viva/i), { target: { value: 'Nueva 100' } });
+    fireEvent.change(screen.getByPlaceholderText(/\+56 9/i), { target: { value: '+56911111111' } });
+
+    // Checkbox desmarcado por defecto → guardar
+    await act(async () => {
+      fireEvent.click(screen.getByText('Guardar pedido'));
+    });
+    await vi.waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+
+    expect(onCrearCliente).not.toHaveBeenCalled();
+    const input = onSubmit.mock.calls[0][0] as PedidoInput;
+    expect(input.clienteId).toBe('');
+    expect(input.clienteDireccion).toBe('Nueva 100');
+    expect(input.clienteContacto).toBe('+56911111111');
+  });
+
+  it('con checkbox marcado: llama onCrearCliente y usa el id retornado', async () => {
+    const onSubmit = vi.fn(async (_input: PedidoInput): Promise<void> => {});
+    const onCrearCliente = vi.fn(async (input: ClienteInput): Promise<Cliente> => {
+      return { id: 'nuevo-1', direccion: input.direccion, contacto: input.contacto, nombre: input.nombre ?? null };
+    });
+    render(
+      <PedidoForm
+        productos={productos}
+        colaciones={[]}
+        clientes={clientes}
+        onSubmit={onSubmit}
+        onCancel={vi.fn()}
+        onCrearCliente={onCrearCliente}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/Fondo/i), { target: { value: 'f1' } });
+    fireEvent.click(screen.getByRole('tab', { name: /Crear cliente nuevo/i }));
+    fireEvent.change(screen.getByPlaceholderText(/Av. Siempre Viva/i), { target: { value: 'Nueva 100' } });
+    fireEvent.change(screen.getByPlaceholderText(/\+56 9/i), { target: { value: '+56911111111' } });
+
+    // Marcar el checkbox
+    const checkbox = screen.getByLabelText(/Guardar cliente en el catálogo/i);
+    fireEvent.click(checkbox);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Guardar pedido'));
+    });
+    await vi.waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+
+    expect(onCrearCliente).toHaveBeenCalledTimes(1);
+    const input = onSubmit.mock.calls[0][0] as PedidoInput;
+    expect(input.clienteId).toBe('nuevo-1');
+  });
+
+  it('al editar un pedido existente no muestra el checkbox de guardar cliente', () => {
+    const inicial: Pedido = {
+      id: 'p1',
+      fecha: '2026-08-19',
+      clienteId: 'cli-1',
+      clienteNombre: 'María González',
+      clienteDireccion: 'Padre Hurtado 123',
+      clienteContacto: '+56912345678',
+      registradoPor: 'Ana',
+      colacionId: null,
+      items: [
+        { productoId: 'f1', nombre: 'Pescado frito', precio: 6500, cantidad: 1, rol: 'fondo' },
+      ],
+      total: 6500,
+      estado: 'creado',
+      tipoEntrega: 'retiro',
+      deliveryCost: 0,
+      metodoPago: 'efectivo',
+      estadoPago: 'pendiente',
+    };
+    render(
+      <PedidoForm
+        productos={productos}
+        colaciones={colaciones}
+        clientes={clientes}
+        inicial={inicial}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(screen.queryByLabelText(/Guardar cliente en el catálogo/i)).toBeNull();
   });
 });

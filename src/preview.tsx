@@ -55,9 +55,9 @@ const pedidos: Pedido[] = [
   pedido({ id: 'p1', estado: 'creado' }),
   pedido({ id: 'p2', estado: 'creado', clienteNombre: 'Sofía Ramírez', total: 6300, tipoEntrega: 'retiro', deliveryCost: 0, metodoPago: 'efectivo', items: [{ productoId: '2', nombre: 'Carne mechada', precio: 5200, cantidad: 1, rol: 'fondo', agregado: 'puré', notas: 'sin sal' }] }),
   pedido({ id: 'p3', estado: 'pagado', clienteNombre: 'Taller Los Robles', estadoPago: 'pagado', total: 28400 }),
-  pedido({ id: 'p4', estado: 'programado', clienteNombre: 'Municipalidad PH', estadoPago: 'pagado', total: 54200, estadoActualizadoPor: 'devops@cic.cl', estadoActualizadoEn: '2026-08-21T11:20:00.000Z' }),
-  pedido({ id: 'p5', estado: 'entregando', clienteNombre: 'Colegio San Marcos', estadoPago: 'pagado', total: 91800 }),
-  pedido({ id: 'p6', estado: 'entregado', clienteNombre: 'Clínica del Valle', estadoPago: 'pagado', total: 12600, estadoActualizadoPor: 'devops@cic.cl', estadoActualizadoEn: '2026-08-20T14:02:00.000Z' }),
+  pedido({ id: 'p4', estado: 'pagado', clienteNombre: 'Municipalidad PH', estadoPago: 'pagado', total: 54200, estadoActualizadoPor: 'devops@cic.cl', estadoActualizadoEn: '2026-08-21T11:20:00.000Z' }),
+  pedido({ id: 'p5', estado: 'finalizado', clienteNombre: 'Colegio San Marcos', estadoPago: 'pagado', total: 91800 }),
+  pedido({ id: 'p6', estado: 'finalizado', clienteNombre: 'Clínica del Valle', estadoPago: 'pagado', total: 12600, estadoActualizadoPor: 'devops@cic.cl', estadoActualizadoEn: '2026-08-20T14:02:00.000Z' }),
   pedido({ id: 'p7', estado: 'cancelado', clienteNombre: null, estadoPago: 'pendiente', total: 4500 }),
 ];
 
@@ -92,7 +92,7 @@ export function Preview() {
 
       <PageHeader
         titulo="Pedidos"
-        descripcion="Tablero por estado: cada pedido avanza de Creado a Entregado siguiendo las transiciones válidas."
+        descripcion="Tablero por estado: cada pedido avanza de Creado a Finalizado siguiendo las transiciones válidas."
         acciones={
           <button className="primary" onClick={() => setDrawerPedido(true)}>
             Nuevo pedido

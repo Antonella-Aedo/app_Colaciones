@@ -69,7 +69,7 @@ export function PedidosPage() {
     <div>
       <PageHeader
         titulo="Pedidos"
-        descripcion="Tablero por estado: cada pedido avanza de Creado a Entregado siguiendo las transiciones válidas."
+        descripcion="Tablero por estado: cada pedido avanza de Creado a Finalizado siguiendo las transiciones válidas."
         acciones={
           <button
             className="primary"

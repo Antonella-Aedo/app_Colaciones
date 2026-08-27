@@ -5,9 +5,7 @@
 
 [data-estado='creado']     { --est: var(--estado-creado);     --est-soft: var(--estado-creado-soft); }
 [data-estado='pagado']     { --est: var(--estado-pagado);     --est-soft: var(--estado-pagado-soft); }
-[data-estado='programado'] { --est: var(--estado-programado); --est-soft: var(--estado-programado-soft); }
-[data-estado='entregando'] { --est: var(--estado-entregando); --est-soft: var(--estado-entregando-soft); }
-[data-estado='entregado']  { --est: var(--estado-entregado);  --est-soft: var(--estado-entregado-soft); }
+[data-estado='finalizado'] { --est: var(--estado-finalizado); --est-soft: var(--estado-finalizado-soft); }
 [data-estado='cancelado']  { --est: var(--estado-cancelado);  --est-soft: var(--estado-cancelado-soft); }
 
 .wrapper {

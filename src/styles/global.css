@@ -125,12 +125,8 @@
   --estado-creado-soft: #f2f4f7;
   --estado-pagado: #027a48;
   --estado-pagado-soft: #ecfdf3;
-  --estado-programado: #4338ca;
-  --estado-programado-soft: #eef0fe;
-  --estado-entregando: #b54708;
-  --estado-entregando-soft: #fff5e6;
-  --estado-entregado: #0f766e;
-  --estado-entregado-soft: #e6f4f2;
+  --estado-finalizado: #0f766e;
+  --estado-finalizado-soft: #e6f4f2;
   --estado-cancelado: #b42318;
   --estado-cancelado-soft: #fef3f2;
 

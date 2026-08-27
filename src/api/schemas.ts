@@ -62,9 +62,7 @@ export const ClienteInputSchema = ClienteSchema.omit({ id: true });
 export const EstadoPedidoSchema = z.enum([
   'creado',
   'pagado',
-  'programado',
-  'entregando',
-  'entregado',
+  'finalizado',
   'cancelado',
 ]);
 
@@ -104,7 +102,9 @@ export const PedidoItemSchema = z.object({
 export const PedidoSchema = z.object({
   id: z.string().min(1),
   fecha: z.string().min(1, 'fecha es requerida'),
-  clienteId: z.string().min(1, 'clienteId es requerido'),
+  // clienteId puede ser '' cuando el usuario elige NO guardar el cliente en el
+  // catálogo: el pedido vive solo con sus snapshots (clienteDireccion, etc.).
+  clienteId: z.string(),
   clienteNombre: z.string().nullable(),
   clienteDireccion: z.string().min(1, 'clienteDireccion es requerido'),
   clienteContacto: z.string().min(1, 'clienteContacto es requerido'),

@@ -52,9 +52,7 @@ export type ClienteInput = Omit<Cliente, 'id'>;
 export type EstadoPedido =
   | 'creado'
   | 'pagado'
-  | 'programado'
-  | 'entregando'
-  | 'entregado'
+  | 'finalizado'
   | 'cancelado';
 
 export type TipoEntrega = 'delivery' | 'retiro';
