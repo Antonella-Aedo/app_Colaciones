@@ -1,0 +1,349 @@
+/* Tablero de pedidos por estado.
+   Eje de color: el ESTADO usa riel IZQUIERDO (avance en el tiempo), a
+   diferencia de Productos que usa riel SUPERIOR (taxonomía). Dos ejes, dos
+   posiciones — el color nunca es ambiguo. */
+
+[data-estado='creado']     { --est: var(--estado-creado);     --est-soft: var(--estado-creado-soft); }
+[data-estado='pagado']     { --est: var(--estado-pagado);     --est-soft: var(--estado-pagado-soft); }
+[data-estado='finalizado'] { --est: var(--estado-finalizado); --est-soft: var(--estado-finalizado-soft); }
+[data-estado='cancelado']  { --est: var(--estado-cancelado);  --est-soft: var(--estado-cancelado-soft); }
+
+.tablero {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(288px, 1fr);
+  gap: var(--space-4);
+  overflow-x: auto;
+  padding-bottom: var(--space-3);
+  scrollbar-width: thin;
+}
+
+.carril {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.carril[data-vacio='true'] {
+  opacity: 0.62;
+}
+
+.carrilHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-bottom: var(--space-1);
+}
+
+.carrilRiel {
+  width: 4px;
+  height: 18px;
+  border-radius: var(--radius-pill);
+  background: var(--est);
+  flex: none;
+}
+
+.carrilTitulo {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--track-snug);
+  margin: 0;
+  white-space: nowrap;
+}
+
+.carrilConteo {
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--est);
+  background: var(--est-soft);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+}
+
+.carrilMonto {
+  margin-left: auto;
+  font-size: var(--text-caption);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.pila {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.carrilVacio {
+  margin: 0;
+  padding: var(--space-6) var(--space-3);
+  text-align: center;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  border: 1px dashed var(--border-hairline);
+  border-radius: var(--radius-md);
+}
+
+/* --- Card de pedido ------------------------------------------------------- */
+/* Focal: cliente domina. Total demoted. Ítems ligeros sin fondo.
+   Tinte sutil de estado en el borde izquierdo además del riel. */
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  padding-left: calc(var(--space-4) + 3px);
+  background: var(--surface-1);
+  border-radius: var(--radius-md);
+  box-shadow: var(--elev-1);
+  overflow: hidden;
+  transition: box-shadow var(--dur) var(--ease-out);
+}
+
+/* El riel de estado */
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--est);
+}
+
+.card:hover,
+.card:focus-within {
+  box-shadow: var(--elev-2);
+}
+
+/* --- Card top: cliente focal, total demoted ------------------------------- */
+
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.clienteBloque {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+/* Focal de la card — el ojo lo lee primero */
+.cliente {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-snug);
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  font-size: var(--text-caption);
+  font-weight: var(--weight-medium);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Total: un escalón abajo del cliente — no compite por atención */
+.total {
+  flex: none;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* --- Ítems: ligeros, sin fondo hundido ------------------------------------ */
+/* Antes tenían --surface-2 que agregaba peso visual a info secundaria.
+   Ahora son texto sutil — la card respira. */
+
+.items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--text-caption);
+  line-height: var(--leading-snug);
+  color: var(--text-tertiary);
+}
+
+.itemCantidad {
+  flex: none;
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.itemNombre {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-secondary);
+}
+
+.itemDetalle {
+  color: var(--text-muted);
+}
+
+.itemRol {
+  flex: none;
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: lowercase;
+}
+
+.verMas {
+  min-height: 22px;
+  padding: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
+  font-size: var(--text-caption);
+  font-weight: var(--weight-semibold);
+  color: var(--brand-700);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.verMas:hover:not(:disabled) {
+  background: none;
+  color: var(--brand-800);
+}
+
+/* --- Pago ----------------------------------------------------------------- */
+
+.pago {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.pagoBadge {
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+}
+
+.pagoBadge[data-pago='pagado'] {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.pagoBadge[data-pago='pendiente'] {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.pagoMetodo {
+  font-size: var(--text-caption);
+  color: var(--text-tertiary);
+}
+
+/* Sin `margin-left: auto`: al envolver en un carril angosto quedaba colgado a
+   la derecha, separado de la insignia de pago que le da sentido. */
+.confirmarPago {
+  min-height: 26px;
+  padding: 2px var(--space-2);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
+  border-radius: var(--radius-xs);
+  color: var(--success);
+  border-color: transparent;
+  background: var(--success-soft);
+  box-shadow: none;
+}
+
+.confirmarPago:hover:not(:disabled) {
+  background: var(--brand-100);
+  color: var(--brand-800);
+}
+
+/* --- Acciones: jerárquicas ------------------------------------------------ */
+/* Select de estado = acción primaria (ancho completo).
+   Editar/Eliminar = secundarias, más pequeñas, agrupadas. */
+
+.acciones {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-soft);
+}
+
+.estadoSelect {
+  width: 100%;
+  min-height: 32px;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  border-radius: var(--radius-xs);
+}
+
+.accionesSecundarias {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.botonSecundario {
+  flex: 1;
+  min-height: 28px;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-semibold);
+  border-radius: var(--radius-xs);
+}
+
+.botonSecundario[data-accion='danger'] {
+  color: var(--danger);
+  border-color: var(--danger-border);
+  background: var(--surface-1);
+  box-shadow: none;
+}
+
+.botonSecundario[data-accion='danger']:hover:not(:disabled) {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.auditoria {
+  margin: 0;
+  font-size: 10px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* --- Responsive: el tablero se apila ------------------------------------- */
+
+@media (max-width: 900px) {
+  .tablero {
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    grid-template-columns: 1fr;
+    gap: var(--space-8);
+    overflow-x: visible;
+  }
+
+  .carril[data-vacio='true'] {
+    display: none;
+  }
+}

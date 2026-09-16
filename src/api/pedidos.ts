@@ -108,6 +108,9 @@ export async function createPedido(input: PedidoInput): Promise<Pedido> {
 }
 
 export async function updatePedido(id: string, input: PedidoInput): Promise<Pedido> {
+  if (!id || typeof id !== 'string') {
+    throw new Error('ID de pedido inválido: se requiere un string no vacío');
+  }
   const validado = PedidoInputSchema.parse(input);
   // Leer el doc actual para validar editabilidad y preservar estado/auditoría
   const snap = await getDoc(doc(db, COL, id));
@@ -155,6 +158,9 @@ export async function cambiarEstadoPedido(
   nuevoEstado: Pedido['estado'],
   usuarioEmail: string,
 ): Promise<Pedido> {
+  if (!id || typeof id !== 'string') {
+    throw new Error('ID de pedido inválido: se requiere un string no vacío');
+  }
   const validadoEstado = EstadoPedidoSchema.parse(nuevoEstado);
   const snap = await getDoc(doc(db, COL, id));
   if (!snap.exists()) throw new Error(`Pedido ${id} no encontrado`);
@@ -195,6 +201,9 @@ export async function confirmarPago(id: string, usuarioEmail: string): Promise<P
 }
 
 export async function deletePedido(id: string): Promise<{ id: string }> {
+  if (!id || typeof id !== 'string') {
+    throw new Error('ID de pedido inválido: se requiere un string no vacío');
+  }
   // Req 5: bloquear eliminación si el estado no es eliminable
   const snap = await getDoc(doc(db, COL, id));
   if (snap.exists()) {

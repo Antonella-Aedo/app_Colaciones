@@ -1,0 +1,248 @@
+/* Barra de control unificada: filtros + toggle de vista + conteo + limpiar.
+   Dos filas visuales: inputs principales arriba, chips + controles abajo.
+   Reusa tokens del design system. Los chips de estado toman el color del riel
+   de estado (mismo eje que el tablero) solo cuando están activos. */
+
+[data-estado='creado']     { --est: var(--estado-creado);     --est-soft: var(--estado-creado-soft); }
+[data-estado='pagado']     { --est: var(--estado-pagado);     --est-soft: var(--estado-pagado-soft); }
+[data-estado='finalizado'] { --est: var(--estado-finalizado); --est-soft: var(--estado-finalizado-soft); }
+[data-estado='cancelado']  { --est: var(--estado-cancelado);  --est-soft: var(--estado-cancelado-soft); }
+
+.barra {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--surface-1);
+  border-radius: var(--radius-md);
+  box-shadow: var(--elev-1);
+}
+
+/* --- Fila 1: inputs principales (fecha + cliente) ------------------------- */
+
+.filaPrincipal {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-4);
+}
+
+.grupoFecha {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.grupoCliente {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.grupoLabel {
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.fechaInputs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.fechaInputs input {
+  min-width: 7rem;
+  flex: 1 1 7rem;
+}
+
+.fechaSep {
+  flex: none;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.chipAccion {
+  flex: none;
+  min-height: 36px;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  border-radius: var(--radius-sm);
+  box-shadow: none;
+}
+
+/* --- Fila 2: chips + toggle + conteo + limpiar ---------------------------- */
+
+.filaSecundaria {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.grupoChips {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 0 0 auto;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.chip {
+  min-height: 32px;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-hairline);
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  box-shadow: none;
+  transition:
+    background-color var(--dur) var(--ease-out),
+    color var(--dur) var(--ease-out),
+    border-color var(--dur) var(--ease-out);
+}
+
+.chip:hover:not([data-activo='true']) {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+/* Chip de estado activo: toma el color del riel de estado */
+.chip[data-estado][data-activo='true'] {
+  background: var(--est-soft);
+  color: var(--est);
+  border-color: transparent;
+  font-weight: var(--weight-bold);
+}
+
+.chip[data-pago='pendiente'][data-activo='true'] {
+  background: var(--warning-soft);
+  color: var(--warning);
+  border-color: transparent;
+  font-weight: var(--weight-bold);
+}
+
+.chip[data-pago='pagado'][data-activo='true'] {
+  background: var(--success-soft);
+  color: var(--success);
+  border-color: transparent;
+  font-weight: var(--weight-bold);
+}
+
+/* Chip sin data-estado/data-pago (entrega): brand al activar */
+.chip:not([data-estado]):not([data-pago])[data-activo='true'] {
+  background: var(--brand-100);
+  color: var(--brand-800);
+  border-color: transparent;
+  font-weight: var(--weight-bold);
+}
+
+/* --- Lado derecho: toggle + conteo + limpiar ------------------------------ */
+
+.lado {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+/* Toggle segmentado Tablero/Lista */
+.toggle {
+  display: inline-flex;
+  padding: 2px;
+  background: var(--surface-sunken);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--elev-flat);
+}
+
+.toggleBtn {
+  min-height: 30px;
+  padding: var(--space-1) var(--space-4);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  border-radius: var(--radius-pill);
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-tertiary);
+  transition:
+    background-color var(--dur) var(--ease-out),
+    color var(--dur) var(--ease-out);
+}
+
+.toggleBtn:hover:not([data-activo='true']) {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.toggleBtn[data-activo='true'] {
+  background: var(--surface-1);
+  color: var(--text-primary);
+  font-weight: var(--weight-bold);
+  box-shadow: var(--elev-1);
+}
+
+.conteo {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.limpiar {
+  min-height: 28px;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--brand-700);
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.limpiar:hover:not(:disabled) {
+  background: none;
+  color: var(--brand-800);
+}
+
+/* --- Responsive ----------------------------------------------------------- */
+
+@media (max-width: 720px) {
+  .filaPrincipal {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .grupoFecha,
+  .grupoCliente {
+    flex: 1 1 auto;
+  }
+
+  .filaSecundaria {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .lado {
+    margin-left: 0;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+}

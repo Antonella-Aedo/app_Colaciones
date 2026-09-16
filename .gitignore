@@ -40,3 +40,22 @@ coverage
 
 # TypeScript build info
 *.tsbuildinfo
+# --- Exclusiones de backup (generadas por Toolbox) ---
+*.7z
+*.avi
+*.bz2
+*.dmg
+*.exe
+*.flv
+*.gz
+*.iso
+*.mkv
+*.mov
+*.mp4
+*.msi
+*.rar
+*.tar
+*.wmv
+*.xz
+*.zip
+# --- fin exclusiones ---

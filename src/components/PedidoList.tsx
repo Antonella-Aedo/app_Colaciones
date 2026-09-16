@@ -1,13 +1,12 @@
 import { useMemo, useState } from 'react';
-import type { EstadoPedido, MetodoPago, Pedido } from '../types';
-import {
-  ESTADO_LABELS,
-  ESTADOS_PEDIDO,
-  esEditable,
-  esEliminable,
-  esTerminal,
-  puedeTransicionar,
-} from '../utils/pedidoEstado';
+import type { EstadoPedido, Pedido } from '../types';
+import { esTerminal } from '../utils/pedidoEstado';
+import { FILTROS_VACIOS, filtrarPedidos, hayFiltrosActivos } from '../utils/pedidoFiltros';
+import { pesos } from '../utils/pedidoFormat';
+import type { FiltrosPedido } from '../utils/pedidoFiltros';
+import { PedidoFiltros } from './PedidoFiltros';
+import { PedidoTablero } from './PedidoTablero';
+import { PedidoTabla } from './PedidoTabla';
 import styles from './PedidoList.module.css';
 
 interface Props {
@@ -20,38 +19,7 @@ interface Props {
   onConfirmarPago: (id: string) => void;
 }
 
-const METODO_PAGO_LABELS: Record<MetodoPago, string> = {
-  efectivo: 'Efectivo',
-  tarjeta: 'Tarjeta',
-  transferencia: 'Transferencia',
-};
-
-const ITEMS_VISIBLES = 2;
-
-function formatFechaHora(iso: string): string {
-  try {
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return iso;
-    return d.toLocaleString('es-CL', {
-      day: '2-digit',
-      month: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  } catch {
-    return iso;
-  }
-}
-
-function pesos(monto: number): string {
-  return `$${monto.toLocaleString('es-CL')}`;
-}
-
-interface Carril {
-  estado: EstadoPedido;
-  pedidos: Pedido[];
-  monto: number;
-}
+type Vista = 'tablero' | 'lista';
 
 export function PedidoList({
   pedidos,
@@ -62,36 +30,17 @@ export function PedidoList({
   onChangeEstado,
   onConfirmarPago,
 }: Props) {
-  const [expandidos, setExpandidos] = useState<Set<string>>(new Set());
+  const [filtros, setFiltros] = useState<FiltrosPedido>(FILTROS_VACIOS);
+  const [vista, setVista] = useState<Vista>('tablero');
 
-  const toggleItems = (id: string) => {
-    setExpandidos((prev) => {
-      const siguiente = new Set(prev);
-      if (siguiente.has(id)) siguiente.delete(id);
-      else siguiente.add(id);
-      return siguiente;
-    });
-  };
-
-  const carriles = useMemo<Carril[]>(() => {
-    const porEstado = new Map<EstadoPedido, Carril>(
-      ESTADOS_PEDIDO.map((estado) => [estado, { estado, pedidos: [], monto: 0 }]),
-    );
-    for (const p of pedidos) {
-      const carril = porEstado.get(p.estado);
-      if (!carril) continue;
-      carril.pedidos.push(p);
-      carril.monto += p.total;
-    }
-    for (const carril of porEstado.values()) {
-      carril.pedidos.sort((a, b) => b.fecha.localeCompare(a.fecha));
-    }
-    return ESTADOS_PEDIDO.map((estado) => porEstado.get(estado)!);
-  }, [pedidos]);
+  const pedidosFiltrados = useMemo(
+    () => filtrarPedidos(pedidos, filtros),
+    [pedidos, filtros],
+  );
 
   const resumen = useMemo(() => {
-    const activos = pedidos.filter((p) => !esTerminal(p.estado));
-    const porCobrar = pedidos.filter(
+    const activos = pedidosFiltrados.filter((p) => !esTerminal(p.estado));
+    const porCobrar = pedidosFiltrados.filter(
       (p) => p.estadoPago === 'pendiente' && p.estado !== 'cancelado',
     );
     return {
@@ -100,11 +49,11 @@ export function PedidoList({
       porCobrar: porCobrar.length,
       montoPorCobrar: porCobrar.reduce((acc, p) => acc + p.total, 0),
     };
-  }, [pedidos]);
+  }, [pedidosFiltrados]);
 
   if (loading) {
     return (
-      <div className={styles.tablero} aria-busy="true" aria-label="Cargando pedidos">
+      <div className={styles.skeletonTablero} aria-busy="true" aria-label="Cargando pedidos">
         {Array.from({ length: 4 }, (_, i) => (
           <div key={i} className={styles.skeletonCarril}>
             <div className={styles.skeletonCard} />
@@ -137,174 +86,55 @@ export function PedidoList({
 
   return (
     <div className={styles.wrapper}>
-      <div className={styles.resumen}>
-        <div className={styles.metrica}>
-          <span className={styles.metricaLabel}>En curso</span>
-          <span className={styles.metricaValor}>{resumen.activos}</span>
-          <span className={styles.metricaMeta}>{pesos(resumen.montoActivo)}</span>
+      {/* Strip de métricas: hero (En curso) + soporte inline.
+          Una sola barra, no 3 cards idénticas. El ojo viaja en F:
+          hero → por cobrar → total. */}
+      <div className={styles.strip}>
+        <div className={styles.stripHero}>
+          <span className={styles.stripLabel}>En curso</span>
+          <span className={styles.stripHeroValor}>{resumen.activos}</span>
+          <span className={styles.stripMeta}>{pesos(resumen.montoActivo)}</span>
         </div>
-        <div className={styles.metrica} data-alerta={resumen.porCobrar > 0}>
-          <span className={styles.metricaLabel}>Por cobrar</span>
-          <span className={styles.metricaValor}>{resumen.porCobrar}</span>
-          <span className={styles.metricaMeta}>{pesos(resumen.montoPorCobrar)}</span>
+        <div className={styles.stripSecundaria} data-alerta={resumen.porCobrar > 0}>
+          <span className={styles.stripLabel}>Por cobrar</span>
+          <span className={styles.stripValor}>{resumen.porCobrar}</span>
+          <span className={styles.stripMeta}>{pesos(resumen.montoPorCobrar)}</span>
         </div>
-        <div className={styles.metrica}>
-          <span className={styles.metricaLabel}>Total pedidos</span>
-          <span className={styles.metricaValor}>{pedidos.length}</span>
-          <span className={styles.metricaMeta}>histórico cargado</span>
+        <div className={styles.stripTerciaria}>
+          <span className={styles.stripLabel}>Total</span>
+          <span className={styles.stripValor}>{pedidosFiltrados.length}</span>
+          <span className={styles.stripMeta}>
+            {hayFiltrosActivos(filtros) ? `de ${pedidos.length}` : 'histórico'}
+          </span>
         </div>
       </div>
 
-      <div className={styles.tablero}>
-        {carriles.map((carril) => (
-          <section
-            key={carril.estado}
-            className={styles.carril}
-            data-estado={carril.estado}
-            data-vacio={carril.pedidos.length === 0}
-            aria-label={`${ESTADO_LABELS[carril.estado]} — ${carril.pedidos.length} pedidos`}
-          >
-            <header className={styles.carrilHeader}>
-              <span className={styles.carrilRiel} aria-hidden="true" />
-              <h3 className={styles.carrilTitulo}>{ESTADO_LABELS[carril.estado]}</h3>
-              <span className={styles.carrilConteo}>{carril.pedidos.length}</span>
-              {carril.monto > 0 && (
-                <span className={styles.carrilMonto}>{pesos(carril.monto)}</span>
-              )}
-            </header>
+      <PedidoFiltros
+        filtros={filtros}
+        onChange={setFiltros}
+        total={pedidos.length}
+        visibles={pedidosFiltrados.length}
+        vista={vista}
+        onVistaChange={setVista}
+      />
 
-            <div className={styles.pila}>
-              {carril.pedidos.length === 0 && (
-                <p className={styles.carrilVacio}>Sin pedidos</p>
-              )}
-
-              {carril.pedidos.map((p) => {
-                const editable = esEditable(p.estado);
-                const eliminable = esEliminable(p.estado);
-                const expandido = expandidos.has(p.id);
-                const visibles = expandido ? p.items : p.items.slice(0, ITEMS_VISIBLES);
-                const ocultos = p.items.length - visibles.length;
-                const opcionesEstado = ESTADOS_PEDIDO.filter(
-                  (est) => est === p.estado || puedeTransicionar(p.estado, est),
-                );
-
-                return (
-                  <article key={p.id} className={styles.card} data-estado={p.estado}>
-                    <div className={styles.cardTop}>
-                      <div className={styles.clienteBloque}>
-                        <span className={styles.cliente}>
-                          {p.clienteNombre || p.clienteDireccion || 'Sin cliente'}
-                        </span>
-                        <span className={styles.meta}>
-                          {p.fecha}
-                          {' · '}
-                          {p.tipoEntrega === 'delivery' ? 'Delivery PH' : 'Retiro'}
-                          {p.colacionId ? ' · colación' : ''}
-                        </span>
-                      </div>
-                      <span className={styles.total}>{pesos(p.total)}</span>
-                    </div>
-
-                    <ul className={styles.items}>
-                      {visibles.map((it, i) => (
-                        <li key={i} className={styles.item}>
-                          <span className={styles.itemCantidad}>{it.cantidad}×</span>
-                          <span className={styles.itemNombre}>
-                            {it.nombre}
-                            {(it.agregado || it.ensalada || it.notas) && (
-                              <span className={styles.itemDetalle}>
-                                {it.agregado && ` · agregado: ${it.agregado}`}
-                                {it.ensalada && ` · ensalada: ${it.ensalada}`}
-                                {it.notas && ` · ${it.notas}`}
-                              </span>
-                            )}
-                          </span>
-                          <span className={styles.itemRol}>{it.rol}</span>
-                        </li>
-                      ))}
-                      {ocultos > 0 && (
-                        <li>
-                          <button
-                            type="button"
-                            className={styles.verMas}
-                            onClick={() => toggleItems(p.id)}
-                          >
-                            +{ocultos} ítem{ocultos > 1 ? 's' : ''} más
-                          </button>
-                        </li>
-                      )}
-                      {expandido && p.items.length > ITEMS_VISIBLES && (
-                        <li>
-                          <button
-                            type="button"
-                            className={styles.verMas}
-                            onClick={() => toggleItems(p.id)}
-                          >
-                            Ver menos
-                          </button>
-                        </li>
-                      )}
-                    </ul>
-
-                    <div className={styles.pago}>
-                      <span className={styles.pagoBadge} data-pago={p.estadoPago}>
-                        {p.estadoPago === 'pagado' ? 'Pagado' : 'Pendiente'}
-                      </span>
-                      <span className={styles.pagoMetodo}>
-                        {METODO_PAGO_LABELS[p.metodoPago]}
-                      </span>
-                      {p.estadoPago === 'pendiente' && (
-                        <button
-                          type="button"
-                          className={styles.confirmarPago}
-                          onClick={() => onConfirmarPago(p.id)}
-                        >
-                          Confirmar pago
-                        </button>
-                      )}
-                    </div>
-
-                    <div className={styles.acciones}>
-                      <select
-                        className={styles.estadoSelect}
-                        value={p.estado}
-                        onChange={(e) => onChangeEstado(p.id, e.target.value as EstadoPedido)}
-                        aria-label={`Cambiar estado del pedido de ${p.clienteNombre || p.clienteDireccion || 'cliente sin nombre'}`}
-                        disabled={opcionesEstado.length <= 1}
-                      >
-                        {opcionesEstado.map((est) => (
-                          <option key={est} value={est}>
-                            {ESTADO_LABELS[est]}
-                          </option>
-                        ))}
-                      </select>
-                      <button type="button" onClick={() => onEdit(p)} disabled={!editable}>
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        className="danger"
-                        onClick={() => onDelete(p.id)}
-                        disabled={!eliminable}
-                      >
-                        Eliminar
-                      </button>
-                    </div>
-
-                    {(p.estadoActualizadoPor || p.estadoActualizadoEn) && (
-                      <p className={styles.auditoria}>
-                        {p.estadoActualizadoPor}
-                        {p.estadoActualizadoPor && p.estadoActualizadoEn && ' · '}
-                        {p.estadoActualizadoEn && formatFechaHora(p.estadoActualizadoEn)}
-                      </p>
-                    )}
-                  </article>
-                );
-              })}
-            </div>
-          </section>
-        ))}
-      </div>
+      {vista === 'tablero' ? (
+        <PedidoTablero
+          pedidos={pedidosFiltrados}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onChangeEstado={onChangeEstado}
+          onConfirmarPago={onConfirmarPago}
+        />
+      ) : (
+        <PedidoTabla
+          pedidos={pedidosFiltrados}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onChangeEstado={onChangeEstado}
+          onConfirmarPago={onConfirmarPago}
+        />
+      )}
     </div>
   );
 }

@@ -40,7 +40,12 @@ export function PedidosPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('¿Eliminar este pedido?')) return;
-    await remove(id);
+    setErrorEstado(null);
+    try {
+      await remove(id);
+    } catch (err) {
+      setErrorEstado(err instanceof Error ? err.message : 'No se pudo eliminar el pedido');
+    }
   };
 
   const handleChangeEstado = async (id: string, estado: EstadoPedido) => {
