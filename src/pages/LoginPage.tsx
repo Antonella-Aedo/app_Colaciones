@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router';
-import { useAuth } from '../firebase/auth';
+import { useAuth } from '../auth/AuthProvider';
 import styles from './LoginPage.module.css';
 
 export function LoginPage() {
-  const { user, loginWithGoogle, authError } = useAuth();
-  const [error, setError] = useState<string | null>(null);
+  const { user, login, authError } = useAuth();
+  const [email, setEmail] = useState('');
   const [enviando, setEnviando] = useState(false);
 
   // Si ya hay sesión (login exitoso o sesión persistida), salir del login.
@@ -13,13 +13,11 @@ export function LoginPage() {
     return <Navigate to="/" replace />;
   }
 
-  const handleGoogleLogin = async () => {
-    setError(null);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setEnviando(true);
     try {
-      await loginWithGoogle();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo iniciar sesión con Google');
+      await login(email);
     } finally {
       setEnviando(false);
     }
@@ -27,21 +25,23 @@ export function LoginPage() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.form}>
+      <form className={styles.form} onSubmit={handleSubmit}>
         <h1 className={styles.title}>Colaciones — Iniciar sesión</h1>
-        {error && <p className={styles.error} role="alert">{error}</p>}
         {authError && <p className={styles.error} role="alert">{authError}</p>}
         <div className={styles.actions}>
-          <button
-            type="button"
-            className="primary"
-            onClick={handleGoogleLogin}
-            disabled={enviando}
-          >
-            {enviando ? 'Ingresando…' : 'Iniciar sesión con Google'}
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="tu@correo.cl"
+            autoComplete="username"
+            autoFocus
+          />
+          <button type="submit" className="primary" disabled={enviando}>
+            {enviando ? 'Ingresando…' : 'Ingresar'}
           </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 }

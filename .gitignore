@@ -6,6 +6,7 @@ node_modules
 # Build
 dist
 dist-ssr
+release
 *.local
 
 # Env
@@ -35,8 +36,10 @@ pnpm-debug.log*
 # Test
 coverage
 
-# Firebase
-.firebase/
+# Base de datos local (SQLite) — si algún día se corre con DB en el repo
+*.db
+*.db-shm
+*.db-wal
 
 # TypeScript build info
 *.tsbuildinfo

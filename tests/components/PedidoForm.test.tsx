@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
-import '../helpers/mockFirestore';
+import { installTestDb } from '../helpers/testDb';
 import { PedidoForm } from '../../src/components/PedidoForm';
 import type { Producto, Colacion, Pedido, PedidoInput, Cliente, ClienteInput } from '../../src/types';
 
@@ -31,7 +31,7 @@ const clientes: Cliente[] = [
 ];
 
 beforeEach(() => {
-  vi.stubEnv('VITE_FIREBASE_CONFIG', '{"projectId":"test"}');
+  installTestDb();
 });
 
 describe('PedidoForm', () => {

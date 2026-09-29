@@ -4,14 +4,14 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  // base relativa: necesaria para que dist/index.html cargue los assets
+  // bajo file:// cuando corre dentro de la app Electron empaquetada.
+  base: './',
   build: {
     rollupOptions: {
       output: {
         manualChunks(id) {
           if (!id.includes('node_modules')) return;
-          // Firebase se separa porque es la mitad del bundle y cambia poco.
-          if (id.includes('firebase/firestore') || id.includes('@firebase/firestore')) return 'firebase-firestore';
-          if (id.includes('firebase/') || id.includes('@firebase/')) return 'firebase-core';
           if (id.includes('node_modules/zod/')) return 'zod';
           // TODO el resto (react, react-dom, react-router, vaul, radix, scheduler,
           // tslib...) va a UN solo chunk a proposito. Separar 'react-vendor' de
@@ -30,9 +30,7 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './tests/setup.ts',
     include: ['tests/**/*.{test,spec}.{ts,tsx}'],
-    // Los tests de reglas de Firestore corren aparte (necesitan el emulador):
-    // ver vitest.rules.config.ts / `npm run test:rules`.
-    exclude: ['node_modules/**', 'dist/**', 'tests/rules/**'],
+    exclude: ['node_modules/**', 'dist/**', 'release/**'],
     coverage: {
       reporter: ['text', 'html'],
       include: ['src/api/**', 'src/hooks/**'],

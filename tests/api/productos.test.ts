@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { resetStore } from '../helpers/mockFirestore';
+import { installTestDb } from '../helpers/testDb';
 import { getProductos, createProducto, updateProducto, deleteProducto } from '../../src/api/productos';
 import type { ProductoInput } from '../../src/types';
 
@@ -12,10 +12,10 @@ const productoInput: ProductoInput = {
 };
 
 beforeEach(() => {
-  resetStore();
+  installTestDb();
 });
 
-describe('api/productos (Firestore)', () => {
+describe('api/productos (SQLite local)', () => {
   it('createProducto agrega a la colección y devuelve el producto con id', async () => {
     const creado = await createProducto(productoInput);
     expect(creado.id).toBeTruthy();

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { resetStore } from '../helpers/mockFirestore';
+import { installTestDb } from '../helpers/testDb';
 import {
   getClientes,
   getCliente,
@@ -17,10 +17,10 @@ const clienteInput: ClienteInput = {
 };
 
 beforeEach(() => {
-  resetStore();
+  installTestDb();
 });
 
-describe('api/clientes (Firestore)', () => {
+describe('api/clientes (SQLite local)', () => {
   it('createCliente agrega y devuelve con id', async () => {
     const creado = await createCliente(clienteInput);
     expect(creado.id).toBeTruthy();

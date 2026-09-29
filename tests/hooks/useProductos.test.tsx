@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
-import { resetStore } from '../helpers/mockFirestore';
+import { installTestDb } from '../helpers/testDb';
 import { useProductos } from '../../src/hooks/useProductos';
 import { createProducto } from '../../src/api/productos';
 import type { ProductoInput } from '../../src/types';
@@ -14,7 +14,7 @@ const productoInput: ProductoInput = {
 };
 
 beforeEach(() => {
-  resetStore();
+  installTestDb();
 });
 
 describe('useProductos', () => {

@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router';
-import { useAuth } from '../firebase/auth';
+import { useAuth } from '../auth/AuthProvider';
 import styles from './Layout.module.css';
 
 const SECCIONES = [

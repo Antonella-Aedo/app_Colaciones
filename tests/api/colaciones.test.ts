@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { resetStore } from '../helpers/mockFirestore';
+import { installTestDb } from '../helpers/testDb';
 import {
   getColaciones,
   getColacion,
@@ -24,10 +24,10 @@ const colacionInput: ColacionInput = {
 };
 
 beforeEach(() => {
-  resetStore();
+  installTestDb();
 });
 
-describe('api/colaciones (Firestore)', () => {
+describe('api/colaciones (SQLite local)', () => {
   it('createColacion agrega y devuelve con id', async () => {
     const creado = await createColacion(colacionInput);
     expect(creado.id).toBeTruthy();

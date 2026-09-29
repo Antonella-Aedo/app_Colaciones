@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { resetStore, store } from '../helpers/mockFirestore';
+import { installTestDb } from '../helpers/testDb';
+import type { DbOps } from '../../electron/db.mjs';
 import { getPedidos, getPedido, createPedido, updatePedido, deletePedido, cambiarEstadoPedido, verificarDireccionDuplicada } from '../../src/api/pedidos';
 import type { PedidoInput } from '../../src/types';
 
@@ -21,11 +22,13 @@ const pedidoInput: PedidoInput = {
   estadoPago: 'pendiente',
 };
 
+let db: DbOps;
+
 beforeEach(() => {
-  resetStore();
+  db = installTestDb();
 });
 
-describe('api/pedidos (Firestore)', () => {
+describe('api/pedidos (SQLite local)', () => {
   it('createPedido agrega con estado creado y devuelve con id', async () => {
     const creado = await createPedido(pedidoInput);
     expect(creado.id).toBeTruthy();
@@ -43,8 +46,7 @@ describe('api/pedidos (Firestore)', () => {
 
   it('updatePedido preserva el estado existente cuando no se provee en el input', async () => {
     const creado = await createPedido(pedidoInput);
-    const colPedidos = store.get('pedidos')!;
-    colPedidos.set(creado.id, { ...colPedidos.get(creado.id)!, estado: 'pagado' });
+    db.update('pedidos', creado.id, { estado: 'pagado' });
 
     const actualizado = await updatePedido(creado.id, { ...pedidoInput, clienteNombre: 'Pedro' });
     expect(actualizado.estado).toBe('pagado');

@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router';
-import { AuthProvider } from './firebase/auth';
+import { AuthProvider } from './auth/AuthProvider';
 import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { ProductosPage } from './pages/ProductosPage';

@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
-import '../helpers/mockFirestore';
+import { installTestDb } from '../helpers/testDb';
 import { ProductoForm } from '../../src/components/ProductoForm';
 import type { ProductoInput } from '../../src/types';
 
 beforeEach(() => {
-  vi.stubEnv('VITE_FIREBASE_CONFIG', '{"projectId":"test"}');
+  installTestDb();
 });
 
 describe('ProductoForm', () => {
@@ -14,7 +14,7 @@ describe('ProductoForm', () => {
     expect(screen.getByLabelText(/Nombre/)).toBeDefined();
     expect(screen.getByLabelText(/Descripción/)).toBeDefined();
     expect(screen.getByLabelText(/Precio/)).toBeDefined();
-    expect(screen.getByLabelText(/^Categoría$/)).toBeDefined();
+    expect(screen.getByLabelText(/^Categoría/)).toBeDefined();
     expect(screen.getByLabelText(/Disponible/)).toBeDefined();
   });
 
@@ -34,7 +34,7 @@ describe('ProductoForm', () => {
     fireEvent.change(screen.getByLabelText(/Nombre/), { target: { value: 'Lasaña' } });
     fireEvent.change(screen.getByLabelText(/Descripción/), { target: { value: 'Lasaña de carne' } });
     fireEvent.change(screen.getByLabelText(/Precio/), { target: { value: 5000 } });
-    fireEvent.change(screen.getByLabelText(/^Categoría$/), { target: { value: 'fondo' } });
+    fireEvent.change(screen.getByLabelText(/^Categoría/), { target: { value: 'fondo' } });
 
     await act(async () => {
       fireEvent.click(screen.getByText('Guardar'));
@@ -55,7 +55,7 @@ describe('ProductoForm', () => {
 
     fireEvent.change(screen.getByLabelText(/Nombre/), { target: { value: 'Brazo de reina' } });
     // seleccionar "Otra…" en el select de categoría
-    fireEvent.change(screen.getByLabelText(/^Categoría$/), { target: { value: '__otra__' } });
+    fireEvent.change(screen.getByLabelText(/^Categoría/), { target: { value: '__otra__' } });
     // aparece el input de categoría personalizada
     fireEvent.change(screen.getByLabelText(/Categoría personalizada/), { target: { value: 'Postres' } });
 
@@ -75,6 +75,7 @@ describe('ProductoForm', () => {
 
     fireEvent.change(screen.getByLabelText(/Nombre/), { target: { value: 'Agua de hierba' } });
     fireEvent.change(screen.getByLabelText(/Precio/), { target: { value: 0 } });
+    fireEvent.change(screen.getByLabelText(/^Categoría/), { target: { value: 'bebida' } });
 
     await act(async () => {
       fireEvent.click(screen.getByText('Guardar'));

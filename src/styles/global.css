@@ -179,6 +179,9 @@
 html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Reserva siempre el gutter del scrollbar: el ancho útil no cambia cuando
+     aparece scroll vertical y el contenido centrado no se desplaza. */
+  scrollbar-gutter: stable;
 }
 
 body {

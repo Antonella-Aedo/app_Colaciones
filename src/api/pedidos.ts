@@ -1,20 +1,4 @@
-import {
-  collection,
-  doc,
-  getDocs,
-  getDoc,
-  setDoc,
-  addDoc,
-  deleteDoc,
-  updateDoc,
-  arrayUnion,
-  query,
-  where,
-  limit,
-  startAfter,
-  orderBy,
-} from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { dbInvoke } from './clientDb';
 import type { CambioEstado, EstadoPago, Pedido, PedidoInput } from '../types';
 import { PedidoInputSchema, EstadoPedidoSchema } from './schemas';
 import { DELIVERY_COST } from '../constants/delivery';
@@ -23,33 +7,33 @@ import { esEditable, esEliminable, puedeTransicionar } from '../utils/pedidoEsta
 const COL = 'pedidos';
 
 export async function getPedidos(): Promise<Pedido[]> {
-  const snap = await getDocs(collection(db, COL));
-  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Pedido, 'id'>) }));
+  return dbInvoke<Pedido[]>('list', COL, { orderBy: 'fecha', desc: true });
 }
 
 /**
- * Obtiene pedidos paginados (ordenados por fecha descendente) usando cursor-based pagination.
- * Mantiene getPedidos() sin cambios para retrocompatibilidad.
+ * Obtiene pedidos paginados (ordenados por fecha descendente).
+ * `startAfterId` es un cursor opaco (offset serializado) devuelto como
+ * `lastDocId` por la página anterior.
  */
 export async function getPedidosPaginated(
   opts?: { limit?: number; startAfterId?: string },
 ): Promise<{ items: Pedido[]; hasMore: boolean; lastDocId: string | null }> {
   const lim = opts?.limit ?? 50;
-  let q = query(collection(db, COL), orderBy('fecha', 'desc'), limit(lim));
-  if (opts?.startAfterId) {
-    q = query(collection(db, COL), orderBy('fecha', 'desc'), startAfter(doc(db, COL, opts.startAfterId)), limit(lim));
-  }
-  const snap = await getDocs(q);
-  const items = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Pedido, 'id'>) }));
-  const hasMore = items.length === lim;
-  const lastDocId = items.length > 0 ? items[items.length - 1].id : null;
+  const offset = opts?.startAfterId ? Number.parseInt(opts.startAfterId, 10) : 0;
+  const docs = await dbInvoke<Pedido[]>('list', COL, {
+    orderBy: 'fecha',
+    desc: true,
+    limit: lim + 1,
+    offset,
+  });
+  const hasMore = docs.length > lim;
+  const items = hasMore ? docs.slice(0, lim) : docs;
+  const lastDocId = hasMore ? String(offset + items.length) : null;
   return { items, hasMore, lastDocId };
 }
 
 export async function getPedido(id: string): Promise<Pedido | null> {
-  const snap = await getDoc(doc(db, COL, id));
-  if (!snap.exists()) return null;
-  return { id: snap.id, ...(snap.data() as Omit<Pedido, 'id'>) };
+  return dbInvoke<Pedido | null>('get', COL, id);
 }
 
 /**
@@ -78,15 +62,11 @@ export async function verificarDireccionDuplicada(
   fecha: string,
   excludeId?: string,
 ): Promise<Pedido[]> {
-  const q = query(
-    collection(db, COL),
-    where('clienteDireccion', '==', direccion),
-    where('fecha', '==', fecha),
-  );
-  const snap = await getDocs(q);
-  return snap.docs
-    .filter((d) => d.id !== excludeId)
-    .map((d) => ({ id: d.id, ...(d.data() as Omit<Pedido, 'id'>) }));
+  const docs = await dbInvoke<Pedido[]>('find', COL, {
+    clienteDireccion: direccion,
+    fecha,
+  });
+  return docs.filter((d) => d.id !== excludeId);
 }
 
 export async function createPedido(input: PedidoInput): Promise<Pedido> {
@@ -103,8 +83,7 @@ export async function createPedido(input: PedidoInput): Promise<Pedido> {
     total,
     estadoPago: validado.estadoPago ?? ('pendiente' as EstadoPago),
   };
-  const ref = await addDoc(collection(db, COL), data);
-  return { id: ref.id, ...data };
+  return dbInvoke<Pedido>('insert', COL, data);
 }
 
 export async function updatePedido(id: string, input: PedidoInput): Promise<Pedido> {
@@ -113,9 +92,8 @@ export async function updatePedido(id: string, input: PedidoInput): Promise<Pedi
   }
   const validado = PedidoInputSchema.parse(input);
   // Leer el doc actual para validar editabilidad y preservar estado/auditoría
-  const snap = await getDoc(doc(db, COL, id));
-  if (!snap.exists()) throw new Error(`Pedido ${id} no encontrado`);
-  const actual = snap.data() as Pedido;
+  const actual = await dbInvoke<Pedido | null>('get', COL, id);
+  if (!actual) throw new Error(`Pedido ${id} no encontrado`);
 
   // Req 5: bloquear edición si el estado no es editable
   if (!esEditable(actual.estado)) {
@@ -143,15 +121,18 @@ export async function updatePedido(id: string, input: PedidoInput): Promise<Pedi
     deliveryCost,
     total,
     estadoPago: validado.estadoPago ?? actual.estadoPago ?? ('pendiente' as EstadoPago),
+    // Preservar campos de auditoría existentes (el input no los trae)
+    estadoActualizadoPor: actual.estadoActualizadoPor,
+    estadoActualizadoEn: actual.estadoActualizadoEn,
+    historialEstados: actual.historialEstados,
   };
-  await setDoc(doc(db, COL, id), data);
-  return { id, ...data };
+  return dbInvoke<Pedido>('replace', COL, id, data);
 }
 
 /**
- * Cambia el estado de un pedido con auditoría (updateDoc + arrayUnion).
- * Registra quién y cuándo cambió el estado en historialEstados.
- * NO usa setDoc (que borraría el historial).
+ * Cambia el estado de un pedido con auditoría.
+ * Registra quién y cuándo cambió el estado en historialEstados
+ * (merge de campos sobre el documento — nunca pisa el historial).
  */
 export async function cambiarEstadoPedido(
   id: string,
@@ -162,9 +143,8 @@ export async function cambiarEstadoPedido(
     throw new Error('ID de pedido inválido: se requiere un string no vacío');
   }
   const validadoEstado = EstadoPedidoSchema.parse(nuevoEstado);
-  const snap = await getDoc(doc(db, COL, id));
-  if (!snap.exists()) throw new Error(`Pedido ${id} no encontrado`);
-  const actual = snap.data() as Pedido;
+  const actual = await dbInvoke<Pedido | null>('get', COL, id);
+  if (!actual) throw new Error(`Pedido ${id} no encontrado`);
 
   // Validar transición
   if (!puedeTransicionar(actual.estado, validadoEstado)) {
@@ -181,15 +161,17 @@ export async function cambiarEstadoPedido(
   const estadoPagoUpdate: Partial<Pedido> =
     validadoEstado === 'pagado' ? { estadoPago: 'pagado' as EstadoPago } : {};
 
-  await updateDoc(doc(db, COL, id), {
+  const patch = {
     estado: validadoEstado,
     estadoActualizadoPor: usuarioEmail,
     estadoActualizadoEn: cambio.cambiadoEn,
-    historialEstados: arrayUnion(cambio),
+    historialEstados: [...(actual.historialEstados ?? []), cambio],
     ...estadoPagoUpdate,
-  });
+  };
 
-  return { ...actual, estado: validadoEstado, estadoActualizadoPor: usuarioEmail, estadoActualizadoEn: cambio.cambiadoEn, ...estadoPagoUpdate };
+  const actualizado = await dbInvoke<Pedido | null>('update', COL, id, patch);
+  if (!actualizado) throw new Error(`Pedido ${id} no encontrado`);
+  return actualizado;
 }
 
 /**
@@ -205,13 +187,9 @@ export async function deletePedido(id: string): Promise<{ id: string }> {
     throw new Error('ID de pedido inválido: se requiere un string no vacío');
   }
   // Req 5: bloquear eliminación si el estado no es eliminable
-  const snap = await getDoc(doc(db, COL, id));
-  if (snap.exists()) {
-    const actual = snap.data() as Pedido;
-    if (!esEliminable(actual.estado)) {
-      throw new Error(`No se puede eliminar un pedido en estado "${actual.estado}"`);
-    }
+  const actual = await dbInvoke<Pedido | null>('get', COL, id);
+  if (actual && !esEliminable(actual.estado)) {
+    throw new Error(`No se puede eliminar un pedido en estado "${actual.estado}"`);
   }
-  await deleteDoc(doc(db, COL, id));
-  return { id };
+  return dbInvoke<{ id: string }>('remove', COL, id);
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
-import '../helpers/mockFirestore';
+import { installTestDb } from '../helpers/testDb';
 import { ColacionForm } from '../../src/components/ColacionForm';
 import type { Producto, ColacionInput } from '../../src/types';
 
@@ -11,7 +11,7 @@ const productos: Producto[] = [
 ];
 
 beforeEach(() => {
-  vi.stubEnv('VITE_FIREBASE_CONFIG', '{"projectId":"test"}');
+  installTestDb();
 });
 
 describe('ColacionForm', () => {

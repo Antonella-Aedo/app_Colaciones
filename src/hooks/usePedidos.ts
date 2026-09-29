@@ -9,7 +9,7 @@ import {
   verificarDireccionDuplicada as apiVerificarDir,
 } from '../api/pedidos';
 import type { EstadoPedido, Pedido, PedidoInput } from '../types';
-import { useAuth } from '../firebase/auth';
+import { useAuth } from '../auth/AuthProvider';
 
 export function usePedidos() {
   const { user } = useAuth();

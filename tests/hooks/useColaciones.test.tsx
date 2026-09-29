@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { resetStore } from '../helpers/mockFirestore';
+import { installTestDb } from '../helpers/testDb';
 import { useColaciones } from '../../src/hooks/useColaciones';
 import { createColacion } from '../../src/api/colaciones';
 import type { ColacionInput } from '../../src/types';
@@ -16,7 +16,7 @@ const colacionInput: ColacionInput = {
 };
 
 beforeEach(() => {
-  resetStore();
+  installTestDb();
 });
 
 describe('useColaciones', () => {

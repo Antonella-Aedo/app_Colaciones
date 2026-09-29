@@ -1,29 +1,15 @@
-import {
-  collection,
-  doc,
-  getDocs,
-  getDoc,
-  setDoc,
-  addDoc,
-  deleteDoc,
-  query,
-  where,
-} from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { dbInvoke } from './clientDb';
 import type { Cliente, ClienteInput } from '../types';
 import { ClienteInputSchema } from './schemas';
 
 const COL = 'clientes';
 
 export async function getClientes(): Promise<Cliente[]> {
-  const snap = await getDocs(collection(db, COL));
-  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Cliente, 'id'>) }));
+  return dbInvoke<Cliente[]>('list', COL, { orderBy: 'direccion' });
 }
 
 export async function getCliente(id: string): Promise<Cliente | null> {
-  const snap = await getDoc(doc(db, COL, id));
-  if (!snap.exists()) return null;
-  return { id: snap.id, ...(snap.data() as Omit<Cliente, 'id'>) };
+  return dbInvoke<Cliente | null>('get', COL, id);
 }
 
 export async function createCliente(input: ClienteInput): Promise<Cliente> {
@@ -34,8 +20,7 @@ export async function createCliente(input: ClienteInput): Promise<Cliente> {
     direccion: validado.direccion.trim().toLowerCase(),
     contacto: validado.contacto.trim().toLowerCase(),
   };
-  const ref = await addDoc(collection(db, COL), data);
-  return { id: ref.id, ...data };
+  return dbInvoke<Cliente>('insert', COL, data);
 }
 
 export async function updateCliente(id: string, input: ClienteInput): Promise<Cliente> {
@@ -45,13 +30,11 @@ export async function updateCliente(id: string, input: ClienteInput): Promise<Cl
     direccion: validado.direccion.trim().toLowerCase(),
     contacto: validado.contacto.trim().toLowerCase(),
   };
-  await setDoc(doc(db, COL, id), data);
-  return { id, ...data };
+  return dbInvoke<Cliente>('replace', COL, id, data);
 }
 
 export async function deleteCliente(id: string): Promise<{ id: string }> {
-  await deleteDoc(doc(db, COL, id));
-  return { id };
+  return dbInvoke<{ id: string }>('remove', COL, id);
 }
 
 /**
@@ -62,15 +45,10 @@ export async function deleteCliente(id: string): Promise<{ id: string }> {
 export async function findOrCreateCliente(input: ClienteInput): Promise<Cliente> {
   const dirNorm = input.direccion.trim().toLowerCase();
   const contNorm = input.contacto.trim().toLowerCase();
-  const q = query(
-    collection(db, COL),
-    where('direccion', '==', dirNorm),
-    where('contacto', '==', contNorm),
-  );
-  const snap = await getDocs(q);
-  if (!snap.empty) {
-    const d = snap.docs[0];
-    return { id: d.id, ...(d.data() as Omit<Cliente, 'id'>) };
-  }
+  const docs = await dbInvoke<Cliente[]>('find', COL, {
+    direccion: dirNorm,
+    contacto: contNorm,
+  });
+  if (docs.length > 0) return docs[0];
   return createCliente(input);
 }

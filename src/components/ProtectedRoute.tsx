@@ -1,5 +1,5 @@
 import { Navigate, Outlet } from 'react-router';
-import { useAuth } from '../firebase/auth';
+import { useAuth } from '../auth/AuthProvider';
 
 /**
  * Guard de rutas: redirige a /login si no hay usuario autenticado.

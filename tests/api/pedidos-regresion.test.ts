@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { resetStore } from '../helpers/mockFirestore';
+import { installTestDb } from '../helpers/testDb';
 import {
   createPedido,
   updatePedido,
@@ -28,7 +28,7 @@ const pedidoInput: PedidoInput = {
 };
 
 beforeEach(() => {
-  resetStore();
+  installTestDb();
 });
 
 // === Regresión: indexOf error ===

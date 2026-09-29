@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { resetStore } from '../helpers/mockFirestore';
+import { installTestDb } from '../helpers/testDb';
 import { usePedidos } from '../../src/hooks/usePedidos';
 import { createPedido } from '../../src/api/pedidos';
 import type { PedidoInput } from '../../src/types';
 
 // Mock useAuth para que user?.email esté disponible
-vi.mock('../../src/firebase/auth', () => ({
-  useAuth: () => ({ user: { email: 'test@test.com' }, loading: false, loginWithGoogle: vi.fn(), logout: vi.fn(), authError: null }),
+vi.mock('../../src/auth/AuthProvider', () => ({
+  useAuth: () => ({ user: { email: 'test@test.com' }, loading: false, login: vi.fn(), logout: vi.fn(), authError: null }),
   AuthProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
@@ -30,7 +30,7 @@ const pedidoInput: PedidoInput = {
 };
 
 beforeEach(() => {
-  resetStore();
+  installTestDb();
 });
 
 describe('usePedidos', () => {

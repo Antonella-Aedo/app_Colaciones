@@ -269,6 +269,8 @@ export function PedidoForm({
   useEffect(() => {
     let cancelado = false;
     if (!onVerificarDireccion || !clienteDireccion || !fecha || tipoEntrega !== 'delivery') {
+      // reset síncrono del aviso cuando deja de aplicar el delivery
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAvisoDireccion(null);
       return;
     }

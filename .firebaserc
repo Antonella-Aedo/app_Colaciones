@@ -1,8 +1,0 @@
-{
-  "firestore": {
-    "rules": "firestore.rules"
-  },
-  "projects": {
-    "default": "app-colaciones-506203"
-  }
-}
