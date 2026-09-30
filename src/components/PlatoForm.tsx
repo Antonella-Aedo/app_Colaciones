@@ -1,5 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { Plato, PlatoInput, PlatoItem, Producto, RolItem, TipoPlato } from '../types';
+import { fotoDeMenu } from '../assets/menuFotos';
+import { archivoADataUrl } from '../utils/imagen';
 import { hoyISO } from '../utils/date';
 import styles from './PlatoForm.module.css';
 import { mensajeDeError } from '../utils/errores';
@@ -21,6 +23,9 @@ export function PlatoForm({ productos, inicial, onSubmit, onCancel }: Props) {
   const [activa, setActiva] = useState(inicial?.activa ?? false);
   const [creadoPor, setCreadoPor] = useState(inicial?.creadoPor ?? '');
   const [items, setItems] = useState<PlatoItem[]>(inicial?.items ?? []);
+  const [foto, setFoto] = useState<string | undefined>(inicial?.foto);
+  const [cargandoFoto, setCargandoFoto] = useState(false);
+  const fotoInputRef = useRef<HTMLInputElement>(null);
   const [productoSel, setProductoSel] = useState('');
   const [rolSel, setRolSel] = useState<RolItem>('fondo');
   const [nota, setNota] = useState('');
@@ -57,6 +62,24 @@ export function PlatoForm({ productos, inicial, onSubmit, onCancel }: Props) {
   const quitarItem = (idx: number) => {
     setItems((prev) => prev.filter((_, i) => i !== idx).map((it, i) => ({ ...it, orden: i + 1 })));
   };
+
+  const handleFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    // Resetea el input: permite volver a elegir el mismo archivo.
+    e.target.value = '';
+    if (!file) return;
+    setError(null);
+    setCargandoFoto(true);
+    try {
+      setFoto(await archivoADataUrl(file));
+    } catch (err) {
+      setError(mensajeDeError(err));
+    } finally {
+      setCargandoFoto(false);
+    }
+  };
+
+  const fotoUrl = fotoDeMenu(foto);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,8 +122,9 @@ export function PlatoForm({ productos, inicial, onSubmit, onCancel }: Props) {
       // Opcionales: se OMITE la clave cuando no aplica (sin undefined).
       if (fecha) input.fecha = fecha;
       if (tipo === 'colacion' && valor.trim()) input.valor = Number(valor);
-      // La foto no se edita en el formulario: se conserva la que traía el plato.
-      if (inicial?.foto) input.foto = inicial.foto;
+      // Foto opcional: clave de MENU_FOTOS (seed) o data URL subida por el
+      // usuario. Si se quitó, la clave se omite y `replace` la elimina.
+      if (foto) input.foto = foto;
       await onSubmit(input);
     } catch (err) {
       setError(mensajeDeError(err));
@@ -154,6 +178,39 @@ export function PlatoForm({ productos, inicial, onSubmit, onCancel }: Props) {
           <input type="checkbox" checked={activa} onChange={(e) => setActiva(e.target.checked)} />
           Disponible hoy
         </label>
+      </fieldset>
+
+      <fieldset className={styles.section}>
+        <legend className={styles.sectionTitle}>Foto (opcional)</legend>
+        <div className={styles.fotoRow}>
+          {fotoUrl ? (
+            <img className={styles.fotoPreview} src={fotoUrl} alt="Foto del plato" />
+          ) : (
+            <div className={styles.fotoVacia}>Sin foto</div>
+          )}
+          <div className={styles.fotoAcciones}>
+            <button
+              type="button"
+              onClick={() => fotoInputRef.current?.click()}
+              disabled={cargandoFoto}
+            >
+              {cargandoFoto ? 'Procesando…' : foto ? 'Cambiar foto' : 'Subir foto'}
+            </button>
+            {foto && (
+              <button type="button" className="danger" onClick={() => setFoto(undefined)}>
+                Quitar
+              </button>
+            )}
+            <input
+              ref={fotoInputRef}
+              type="file"
+              accept="image/*"
+              className={styles.fotoInputOculto}
+              aria-label="Archivo de foto del plato"
+              onChange={handleFoto}
+            />
+          </div>
+        </div>
       </fieldset>
 
       <fieldset className={styles.section}>

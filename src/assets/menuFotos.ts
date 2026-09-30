@@ -1,6 +1,7 @@
 // Fotos de menú empaquetadas con la app. `Plato.foto` guarda la CLAVE de
-// este mapa (ej. 'cazuela'), no la URL — así el documento es independiente de
-// cómo Vite nombra el asset en el bundle.
+// este mapa (ej. 'cazuela') o un data URL cuando la foto la sube el usuario
+// desde el formulario — así el documento es independiente de cómo Vite
+// nombra el asset en el bundle.
 import cazuela from './menus/cazuela.jpg';
 import chuleta from './menus/chuleta.jpg';
 import pasta from './menus/pasta.jpg';
@@ -25,7 +26,12 @@ export const MENU_FOTOS: Record<string, string> = {
   pollo,
 };
 
-/** Resuelve la clave de foto de un plato a la URL del asset (o undefined). */
-export function fotoDeMenu(clave: string | undefined): string | undefined {
-  return clave ? MENU_FOTOS[clave] : undefined;
+/**
+ * Resuelve `Plato.foto` a la URL renderizable: un data URL se usa tal cual;
+ * una clave apunta al asset empaquetado (o undefined si no existe).
+ */
+export function fotoDeMenu(foto: string | undefined): string | undefined {
+  if (!foto) return undefined;
+  if (foto.startsWith('data:')) return foto;
+  return MENU_FOTOS[foto];
 }

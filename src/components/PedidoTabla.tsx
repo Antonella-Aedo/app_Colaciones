@@ -1,4 +1,4 @@
-import type { EstadoPedido, MetodoPago, Pedido } from '../types';
+import type { EstadoPedido, Pedido } from '../types';
 import {
   ESTADO_LABELS,
   ESTADOS_PEDIDO,
@@ -7,7 +7,7 @@ import {
   esTerminal,
   puedeTransicionar,
 } from '../utils/pedidoEstado';
-import { formatFecha, pesos } from '../utils/pedidoFormat';
+import { formatFecha, METODO_PAGO_LABELS, pesos } from '../utils/pedidoFormat';
 import styles from './PedidoTabla.module.css';
 
 interface Props {
@@ -17,12 +17,6 @@ interface Props {
   onChangeEstado: (id: string, estado: EstadoPedido) => void;
   onConfirmarPago: (id: string) => void;
 }
-
-const METODO_PAGO_LABELS: Record<MetodoPago, string> = {
-  efectivo: 'Efectivo',
-  tarjeta: 'Tarjeta',
-  transferencia: 'Transferencia',
-};
 
 export function PedidoTabla({
   pedidos,

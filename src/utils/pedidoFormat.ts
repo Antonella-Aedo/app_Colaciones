@@ -1,5 +1,23 @@
-// Helpers de presentación para pedidos — formato de moneda y fecha/hora.
-// Compartidos por PedidoTablero y PedidoTabla.
+// Helpers de presentación para pedidos — formato de moneda, fecha/hora
+// y labels legibles. Compartidos por PedidoTablero, PedidoTabla y el
+// export a Excel.
+import type { EstadoPago, MetodoPago, TipoEntrega } from '../types';
+
+export const METODO_PAGO_LABELS: Record<MetodoPago, string> = {
+  efectivo: 'Efectivo',
+  tarjeta: 'Tarjeta',
+  transferencia: 'Transferencia',
+};
+
+export const ENTREGA_LABELS: Record<TipoEntrega, string> = {
+  delivery: 'Delivery',
+  retiro: 'Retiro',
+};
+
+export const PAGO_LABELS: Record<EstadoPago, string> = {
+  pendiente: 'Pendiente',
+  pagado: 'Pagado',
+};
 
 export function formatFechaHora(iso: string): string {
   try {

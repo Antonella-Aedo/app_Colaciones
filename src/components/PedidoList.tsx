@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import type { EstadoPedido, Pedido } from '../types';
+import { hoyISO } from '../utils/date';
 import { esTerminal } from '../utils/pedidoEstado';
+import { exportarPedidosExcel } from '../utils/pedidoExport';
 import { FILTROS_VACIOS, filtrarPedidos, hayFiltrosActivos } from '../utils/pedidoFiltros';
 import { pesos } from '../utils/pedidoFormat';
 import type { FiltrosPedido } from '../utils/pedidoFiltros';
@@ -30,13 +32,30 @@ export function PedidoList({
   onChangeEstado,
   onConfirmarPago,
 }: Props) {
-  const [filtros, setFiltros] = useState<FiltrosPedido>(FILTROS_VACIOS);
+  // Por defecto se visualizan los pedidos de hoy; "Limpiar" muestra todo.
+  const [filtros, setFiltros] = useState<FiltrosPedido>(() => ({
+    ...FILTROS_VACIOS,
+    fechaDesde: hoyISO(),
+    fechaHasta: hoyISO(),
+  }));
   const [vista, setVista] = useState<Vista>('tablero');
+  const [exportando, setExportando] = useState(false);
 
   const pedidosFiltrados = useMemo(
     () => filtrarPedidos(pedidos, filtros),
     [pedidos, filtros],
   );
+
+  const handleExportar = async () => {
+    setExportando(true);
+    try {
+      await exportarPedidosExcel(pedidosFiltrados, filtros);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'No se pudo exportar el Excel');
+    } finally {
+      setExportando(false);
+    }
+  };
 
   const resumen = useMemo(() => {
     const activos = pedidosFiltrados.filter((p) => !esTerminal(p.estado));
@@ -116,6 +135,8 @@ export function PedidoList({
         visibles={pedidosFiltrados.length}
         vista={vista}
         onVistaChange={setVista}
+        exportando={exportando}
+        onExportar={handleExportar}
       />
 
       {vista === 'tablero' ? (

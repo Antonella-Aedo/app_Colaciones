@@ -1,4 +1,5 @@
 import type { EstadoPago, TipoEntrega } from '../types';
+import { hoyISO } from '../utils/date';
 import { ESTADO_LABELS, ESTADOS_PEDIDO } from '../utils/pedidoEstado';
 import type { FiltrosPedido } from '../utils/pedidoFiltros';
 import styles from './PedidoFiltros.module.css';
@@ -10,6 +11,8 @@ interface Props {
   visibles: number;
   vista: 'tablero' | 'lista';
   onVistaChange: (vista: 'tablero' | 'lista') => void;
+  exportando: boolean;
+  onExportar: () => void;
 }
 
 const TIPOS_ENTREGA: { valor: TipoEntrega; label: string }[] = [
@@ -26,12 +29,6 @@ function toggle<T>(lista: T[], valor: T): T[] {
   return lista.includes(valor) ? lista.filter((v) => v !== valor) : [...lista, valor];
 }
 
-function hoyISO(): string {
-  const d = new Date();
-  const tz = d.getTimezoneOffset() * 60000;
-  return new Date(d.getTime() - tz).toISOString().slice(0, 10);
-}
-
 export function PedidoFiltros({
   filtros,
   onChange,
@@ -39,6 +36,8 @@ export function PedidoFiltros({
   visibles,
   vista,
   onVistaChange,
+  exportando,
+  onExportar,
 }: Props) {
   const set = (patch: Partial<FiltrosPedido>) => onChange({ ...filtros, ...patch });
   const limpiar = () =>
@@ -176,6 +175,14 @@ export function PedidoFiltros({
           <span className={styles.conteo}>
             {visibles} de {total}
           </span>
+          <button
+            type="button"
+            className={styles.exportar}
+            onClick={onExportar}
+            disabled={exportando || visibles === 0}
+          >
+            {exportando ? 'Exportando…' : 'Exportar Excel'}
+          </button>
           <button type="button" className={styles.limpiar} onClick={limpiar}>
             Limpiar
           </button>

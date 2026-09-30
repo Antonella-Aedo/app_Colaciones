@@ -71,6 +71,49 @@
   cursor: pointer;
 }
 
+/* --- Foto opcional ---------------------------------------------------------- */
+
+.fotoRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.fotoPreview {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--elev-flat);
+  flex: none;
+}
+
+.fotoVacia {
+  width: 96px;
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+  border: 1px dashed var(--border-hairline);
+  border-radius: var(--radius-sm);
+  background: var(--surface-1);
+  flex: none;
+}
+
+.fotoAcciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* El trigger visible es el botón; el input file nativo queda oculto. */
+.fotoInputOculto {
+  display: none;
+}
+
 /* --- Constructor de la bandeja -------------------------------------------- */
 
 .addItem {

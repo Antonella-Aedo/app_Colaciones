@@ -37,7 +37,7 @@ export interface Plato {
   valor?: number;       // precio fijo — obligatorio cuando tipo === 'colacion'
   creadoPor: string;
   items: PlatoItem[];
-  foto?: string;        // clave en MENU_FOTOS (src/assets/menuFotos.ts)
+  foto?: string;        // clave en MENU_FOTOS (src/assets/menuFotos.ts) o data URL subida por el usuario
 }
 
 export type PlatoInput = Omit<Plato, 'id'>;
