@@ -1,4 +1,4 @@
-# app_Colaciones test
+# app_Colaciones
 
 Aplicación de **escritorio** para la gestión de colaciones alimentarias (refrigerios / snacks). Permite administrar un **catálogo de productos** (CRUD), armar **colaciones** (menú del día con roles: fondo, agregado, ensalada, extra) y registrar/listar **pedidos**. Los datos persisten en una **base de datos local SQLite** — sin servicios externos, sin nube, sin config.
 
