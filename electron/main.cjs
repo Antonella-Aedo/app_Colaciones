@@ -24,6 +24,16 @@ const PUBLIC_OPS = ['list', 'get', 'find', 'insert', 'replace', 'update', 'remov
 
 let db = null;
 let dbFile = null;
+let actualizador = null;
+
+/** updater.mjs es ESM (lo comparten los tests); desde CJS se importa así. */
+async function getActualizador() {
+  if (!actualizador) {
+    const { crearActualizador } = await import('./updater.mjs');
+    actualizador = crearActualizador();
+  }
+  return actualizador;
+}
 
 async function initDb() {
   // db.mjs / seed-data.mjs son ESM (los comparten los tests de vitest);
@@ -47,6 +57,71 @@ function registerIpc() {
     return db[op](...args);
   });
   ipcMain.handle('db:path', () => dbFile);
+}
+
+/**
+ * IPC del auto-update. El contrato cruza el bridge como objetos resultado
+ * (verificar → { soportado, disponible, ... } | { error }), nunca excepciones:
+ * Electron serializa los errores de ipcMain.handle como texto plano.
+ *
+ * El repo es app.getAppPath(): la raíz del proyecto al correr desde fuente.
+ * Empaquetado (.exe) es app.asar — sin .git ni npm, se reporta no soportado.
+ */
+function registerUpdateIpc() {
+  const repoDir = app.getAppPath();
+  let aplicando = false; // mutex: dos apply concurrentes corromperían el working tree
+
+  ipcMain.handle('update:check', async () => {
+    if (app.isPackaged) return { soportado: false };
+    const upd = await getActualizador();
+    const resultado = await upd.verificar(repoDir);
+    if (resultado.error?.detalle) {
+      console.error(`[update:check] ${resultado.error.code} — ${resultado.error.detalle}`);
+    }
+    return resultado;
+  });
+
+  ipcMain.handle('update:apply', async (event) => {
+    if (app.isPackaged) {
+      return {
+        ok: false,
+        error: { code: 'SIN_REPO', mensaje: 'La actualización automática solo está disponible al correr desde el código fuente.' },
+      };
+    }
+    if (aplicando) {
+      return {
+        ok: false,
+        error: { code: 'EN_CURSO', mensaje: 'Ya hay una actualización en curso.' },
+      };
+    }
+    aplicando = true;
+    const upd = await getActualizador();
+    const avisar = (paso) => {
+      if (!event.sender.isDestroyed()) event.sender.send('update:progreso', paso);
+    };
+    const resultado = await upd.aplicar(repoDir, avisar);
+    if (!resultado.ok) {
+      aplicando = false;
+      console.error(`[update:apply] ${resultado.error?.code} — ${resultado.error?.detalle}`);
+      return resultado;
+    }
+
+    // Reinicio: SIN el flag --dev — el nuevo proceso carga dist/ recién
+    // compilado. (Relanzar en dev dejaría pantalla en blanco: `concurrently
+    // -k` mata al dev server de vite cuando el electron viejo se cierra.)
+    avisar('reiniciando');
+    setTimeout(() => {
+      try {
+        app.relaunch({ args: [repoDir] });
+      } catch (err) {
+        // Si el relaunch falla igual conviene cerrar: el código nuevo ya está
+        // en dist/ y la siguiente apertura manual lo cargará.
+        console.error('[update:apply] relaunch falló:', err);
+      }
+      app.exit(0);
+    }, 500); // margen para que el renderer pinte "Reiniciando…" antes de morir
+    return resultado;
+  });
 }
 
 function createWindow() {
@@ -75,6 +150,7 @@ function createWindow() {
 app.whenReady().then(async () => {
   await initDb();
   registerIpc();
+  registerUpdateIpc();
   createWindow();
 
   app.on('activate', () => {

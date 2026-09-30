@@ -71,4 +71,9 @@ describe('LoginPage', () => {
     renderLogin();
     await screen.findByText('PANEL');
   });
+
+  it('integra el panel de auto-update con su botón de búsqueda', () => {
+    renderLogin();
+    expect(screen.getByRole('button', { name: 'Buscar actualizaciones' })).toBeDefined();
+  });
 });

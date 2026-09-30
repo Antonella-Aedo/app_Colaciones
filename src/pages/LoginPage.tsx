@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Navigate } from 'react-router';
 import { useAuth } from '../auth/AuthProvider';
 import { Bandeja } from '../components/Bandeja';
+import { ActualizacionPanel } from '../components/ActualizacionPanel';
 import heroImg from '../assets/colacion-hero.jpg';
 import styles from './LoginPage.module.css';
 
@@ -101,6 +102,8 @@ export function LoginPage() {
               {enviando ? 'Ingresando…' : 'Ingresar'}
             </button>
           </form>
+
+          <ActualizacionPanel />
 
           <p className={styles.pie}>
             Aplicación local — los datos se guardan en este equipo.
