@@ -4,10 +4,11 @@ import { Bandeja } from './Bandeja';
 import styles from './Layout.module.css';
 
 const SECCIONES = [
-  { to: '/colaciones', label: 'Colaciones' },
+  { to: '/platos', label: 'Platos' },
   { to: '/productos', label: 'Productos' },
   { to: '/pedidos', label: 'Pedidos' },
   { to: '/clientes', label: 'Clientes' },
+  { to: '/test', label: 'Test' },
 ] as const;
 
 function iniciales(email: string): string {

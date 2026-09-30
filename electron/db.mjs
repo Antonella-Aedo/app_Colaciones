@@ -13,11 +13,37 @@ import { randomUUID } from 'node:crypto';
 
 export const COLLECTIONS = [
   'productos',
-  'colaciones',
+  'platos',
   'pedidos',
   'clientes',
   'usuariosPermitidos',
 ];
+
+/**
+ * Migración de esquema sobre DBs existentes (corre dentro de createDb).
+ * v1 → v2: la colección `colaciones` pasa a ser `platos` con campo `tipo`.
+ *  - docs viejos se copian con tipo='menu' (todas eran "menú del día")
+ *  - pedidos: data.colacionId → data.platoId
+ *  - la tabla vieja se elimina
+ * Idempotente: si no existe la tabla vieja, no hace nada.
+ */
+function migrar(db) {
+  const existeColaciones = db
+    .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='colaciones'")
+    .get();
+  if (!existeColaciones) return;
+
+  const correr = db.transaction(() => {
+    db.exec(`INSERT OR IGNORE INTO platos (id, data)
+             SELECT id, json_set(data, '$.tipo', 'menu') FROM colaciones`);
+    db.exec(`UPDATE pedidos SET data = json_remove(
+               json_set(data, '$.platoId', json_extract(data, '$.colacionId')),
+               '$.colacionId')
+             WHERE json_extract(data, '$.colacionId') IS NOT NULL`);
+    db.exec('DROP TABLE colaciones');
+  });
+  correr();
+}
 
 const FIELD_RE = /^[a-zA-Z_][a-zA-Z0-9_.]*$/;
 
@@ -52,6 +78,8 @@ export function createDb(filename = ':memory:') {
   for (const col of COLLECTIONS) {
     db.exec(`CREATE TABLE IF NOT EXISTS "${col}" (id TEXT PRIMARY KEY, data TEXT NOT NULL)`);
   }
+
+  migrar(db);
 
   const toDoc = (row) => (row ? { id: row.id, ...JSON.parse(row.data) } : null);
 

@@ -1,5 +1,5 @@
-// Tipos compartidos — fuente de verdad del contrato con Firestore.
-// Colecciones: productos, colaciones, pedidos, clientes, usuariosPermitidos.
+// Tipos compartidos — fuente de verdad del contrato de datos.
+// Colecciones: productos, platos, pedidos, clientes, usuariosPermitidos.
 
 // === Productos (catálogo) ===
 
@@ -14,27 +14,33 @@ export interface Producto {
 
 export type ProductoInput = Omit<Producto, 'id'>;
 
-// === Colaciones (plato compuesto / menú del día) ===
+// === Platos (menú del día variable o colación de valor predeterminado) ===
 
 export type RolItem = 'fondo' | 'agregado' | 'ensalada' | 'extra';
 
-export interface ColacionItem {
+/** 'menu' = ítems libres y valor variable; 'colacion' = set predefinido con precio fijo. */
+export type TipoPlato = 'menu' | 'colacion';
+
+export interface PlatoItem {
   productoId: string;   // referencia a producto del catálogo
   rol: RolItem;
   orden: number;
   nota?: string;
 }
 
-export interface Colacion {
+export interface Plato {
   id: string;
   nombre: string;
-  fecha: string;        // ISO yyyy-MM-dd
-  activa: boolean;      // menú del día activo (solo una a la vez)
+  tipo: TipoPlato;
+  fecha?: string;       // ISO yyyy-MM-dd — menús del día; opcional en colaciones
+  activa: boolean;      // disponible hoy (varios platos pueden estarlo a la vez)
+  valor?: number;       // precio fijo — obligatorio cuando tipo === 'colacion'
   creadoPor: string;
-  items: ColacionItem[];
+  items: PlatoItem[];
+  foto?: string;        // clave en MENU_FOTOS (src/assets/menuFotos.ts)
 }
 
-export type ColacionInput = Omit<Colacion, 'id'>;
+export type PlatoInput = Omit<Plato, 'id'>;
 
 // === Clientes ===
 
@@ -86,7 +92,7 @@ export interface Pedido {
   clienteDireccion: string;      // snapshot (para aviso de dirección duplicada)
   clienteContacto: string;       // snapshot
   registradoPor: string;
-  colacionId?: string | null;  // referencia a colación precargada (null si desde cero)
+  platoId?: string | null;     // referencia a plato precargado (null si desde cero)
   items: PedidoItem[];
   total: number;          // Σ(precio×cantidad) + deliveryCost
   estado: EstadoPedido;

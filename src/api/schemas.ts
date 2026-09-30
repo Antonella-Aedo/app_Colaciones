@@ -2,7 +2,8 @@
 // Estos espejan los tipos de `src/types/index.ts` pero añaden reglas de
 // validación en tiempo de ejecución: los tipos de TypeScript solo existen
 // en compilación y no protegen contra datos arbitrarios en runtime.
-// Toda escritura a Firestore pasa por estos esquemas antes de persistir.
+// Toda escritura a la base local (SQLite vía window.colaciones) pasa por estos
+// esquemas antes de persistir.
 
 import { z } from 'zod';
 
@@ -20,31 +21,61 @@ export const ProductoSchema = z.object({
 // ProductoInput = Omit<Producto, 'id'>
 export const ProductoInputSchema = ProductoSchema.omit({ id: true });
 
-// === Colaciones (plato compuesto / menú del día) ===
+// === Platos (menú del día variable o colación de valor predeterminado) ===
 
 export const RolItemSchema = z.enum(['fondo', 'agregado', 'ensalada', 'extra']);
 
-export const ColacionItemSchema = z.object({
+export const TipoPlatoSchema = z.enum(['menu', 'colacion']);
+
+export const PlatoItemSchema = z.object({
   productoId: z.string().min(1, 'productoId es requerido'),
   rol: RolItemSchema,
   orden: z.number().min(0, 'orden debe ser >= 0'),
   nota: z.string().optional(),
 });
 
-export const ColacionSchema = z.object({
+const PlatoBase = z.object({
   id: z.string().min(1),
   nombre: z.string().min(1, 'nombre es requerido'),
-  fecha: z.string().min(1, 'fecha es requerida'),
+  tipo: TipoPlatoSchema,
+  fecha: z.string().min(1, 'fecha es requerida').optional(),
   activa: z.boolean(),
+  valor: z.number().min(0, 'valor debe ser >= 0').optional(),
   // Opcional: la UI lo presenta sin asterisco y sin validacion, asi que un
   // valor vacio NO debe bloquear el guardado. Se persiste como '' (las
   // reglas solo exigen que sea string).
   creadoPor: z.string(),
-  items: z.array(ColacionItemSchema).min(1, 'items debe tener al menos un elemento'),
+  items: z.array(PlatoItemSchema).min(1, 'items debe tener al menos un elemento'),
+  foto: z.string().optional(),
 });
 
-// ColacionInput = Omit<Colacion, 'id'>
-export const ColacionInputSchema = ColacionSchema.omit({ id: true });
+// Reglas cruzadas: colación = set de valor predeterminado (precio fijo
+// obligatorio); menú = oferta variable del día (fecha obligatoria).
+// Se tipa con la forma mínima para que sirva en PlatoSchema y PlatoInputSchema.
+const reglasPlato = (
+  p: { tipo: string; fecha?: string; valor?: number },
+  ctx: z.RefinementCtx,
+) => {
+  if (p.tipo === 'colacion' && (p.valor === undefined || p.valor <= 0)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['valor'],
+      message: 'una colación requiere un valor predeterminado (> 0)',
+    });
+  }
+  if (p.tipo === 'menu' && !p.fecha) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['fecha'],
+      message: 'un menú requiere fecha',
+    });
+  }
+};
+
+export const PlatoSchema = PlatoBase.superRefine(reglasPlato);
+
+// PlatoInput = Omit<Plato, 'id'>
+export const PlatoInputSchema = PlatoBase.omit({ id: true }).superRefine(reglasPlato);
 
 // === Clientes ===
 
@@ -108,9 +139,9 @@ export const PedidoSchema = z.object({
   clienteNombre: z.string().nullable(),
   clienteDireccion: z.string().min(1, 'clienteDireccion es requerido'),
   clienteContacto: z.string().min(1, 'clienteContacto es requerido'),
-  // Opcional, mismo criterio que Colacion.creadoPor: vacio se guarda como ''.
+  // Opcional, mismo criterio que Plato.creadoPor: vacio se guarda como ''.
   registradoPor: z.string(),
-  colacionId: z.string().nullable(),
+  platoId: z.string().nullable(),
   items: z.array(PedidoItemSchema).min(1, 'items debe tener al menos un elemento'),
   total: z.number().min(0, 'total debe ser >= 0'),
   estado: EstadoPedidoSchema,

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type {
   Cliente,
   ClienteInput,
-  Colacion,
+  Plato,
   EstadoPago,
   MetodoPago,
   Pedido,
@@ -99,7 +99,7 @@ function itemsToMenus(items: PedidoItem[], productos: Producto[]): MenuForm[] {
 
 /** Convierte los menús visuales de vuelta al modelo plano (PedidoItem[]).
  *  Cada componente (fondo, agregado, ensalada, extras) se aplana a un
- *  PedidoItem independiente, consistente con el modelo de colación. */
+ *  PedidoItem independiente, consistente con el modelo de plato. */
 function menusToItems(menus: MenuForm[], productos: Producto[]): PedidoItem[] {
   const items: PedidoItem[] = [];
   for (const menu of menus) {
@@ -157,8 +157,8 @@ function menusToItems(menus: MenuForm[], productos: Producto[]): PedidoItem[] {
   return items;
 }
 
-/** Convierte una colación en un menú visual. */
-function colacionToMenu(col: Colacion): MenuForm {
+/** Convierte un plato en un menú visual. */
+function platoAMenuForm(col: Plato): MenuForm {
   const menu = emptyMenu();
   const notas: string[] = [];
   for (const ci of col.items) {
@@ -188,7 +188,7 @@ function colacionToMenu(col: Colacion): MenuForm {
 
 interface Props {
   productos: Producto[];
-  colaciones: Colacion[];
+  platos: Plato[];
   clientes: Cliente[];
   inicial?: Pedido | null;
   onSubmit: (input: PedidoInput) => Promise<void>;
@@ -201,7 +201,7 @@ interface Props {
 
 export function PedidoForm({
   productos,
-  colaciones,
+  platos,
   clientes,
   inicial,
   onSubmit,
@@ -225,7 +225,7 @@ export function PedidoForm({
   const [menus, setMenus] = useState<MenuForm[]>(() =>
     inicial ? itemsToMenus(inicial.items, productos) : [emptyMenu()],
   );
-  const [colacionId, setColacionId] = useState<string | null>(inicial?.colacionId ?? null);
+  const [platoId, setPlatoId] = useState<string | null>(inicial?.platoId ?? null);
   // Selección temporal de extra por menú (menuId → { productoId, cantidad })
   const [extraSel, setExtraSel] = useState<Record<string, { productoId: string; cantidad: number }>>({});
 
@@ -338,23 +338,23 @@ export function PedidoForm({
     );
   };
 
-  // --- Precarga desde colación ---
-  const precargarColacion = (id: string) => {
-    const col = colaciones.find((c) => c.id === id);
+  // --- Precarga desde plato ---
+  const precargarPlato = (id: string) => {
+    const col = platos.find((c) => c.id === id);
     if (!col) return;
-    setColacionId(id);
+    setPlatoId(id);
     setMenus((prev) => {
       // Si solo hay un menú vacío, lo reemplaza; si no, añade
       if (prev.length === 1 && !prev[0].fondoId && prev[0].extras.length === 0) {
-        return [colacionToMenu(col)];
+        return [platoAMenuForm(col)];
       }
-      return [...prev, colacionToMenu(col)];
+      return [...prev, platoAMenuForm(col)];
     });
     setError(null);
   };
 
   const desdeCero = () => {
-    setColacionId(null);
+    setPlatoId(null);
     setMenus([emptyMenu()]);
   };
 
@@ -415,7 +415,7 @@ export function PedidoForm({
         clienteDireccion: dirFinal,
         clienteContacto: contFinal,
         registradoPor: registradoPor.trim(),
-        colacionId,
+        platoId,
         items,
         total,
         tipoEntrega,
@@ -447,20 +447,20 @@ export function PedidoForm({
 
         <div className={styles.precarga}>
           <label className={styles.field}>
-            Precargar desde colación
+            Precargar desde plato
             <select
-              value={colacionId ?? ''}
-              onChange={(e) => (e.target.value ? precargarColacion(e.target.value) : desdeCero())}
+              value={platoId ?? ''}
+              onChange={(e) => (e.target.value ? precargarPlato(e.target.value) : desdeCero())}
             >
               <option value="">— Crear desde cero —</option>
-              {colaciones.map((c) => (
+              {platos.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.nombre} {c.activa ? '★' : ''} ({c.fecha})
+                  {c.nombre} {c.activa ? '★' : ''} ({c.tipo === 'colacion' ? 'colación' : c.fecha})
                 </option>
               ))}
             </select>
           </label>
-          {colacionId && (
+          {platoId && (
             <button type="button" onClick={desdeCero}>Limpiar y crear desde cero</button>
           )}
         </div>

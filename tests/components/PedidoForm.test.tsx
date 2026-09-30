@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { installTestDb } from '../helpers/testDb';
 import { PedidoForm } from '../../src/components/PedidoForm';
-import type { Producto, Colacion, Pedido, PedidoInput, Cliente, ClienteInput } from '../../src/types';
+import type { Producto, Plato, Pedido, PedidoInput, Cliente, ClienteInput } from '../../src/types';
 
 const productos: Producto[] = [
   { id: 'f1', nombre: 'Pescado frito', descripcion: '', precio: 6500, categoria: 'fondo', disponible: true },
@@ -11,10 +11,11 @@ const productos: Producto[] = [
   { id: 'e1', nombre: 'Ensalada surtida', descripcion: '', precio: 0, categoria: 'ensalada', disponible: true },
 ];
 
-const colaciones: Colacion[] = [
+const platos: Plato[] = [
   {
     id: 'c1',
     nombre: 'Menú del día',
+    tipo: 'menu',
     fecha: '2026-08-20',
     activa: true,
     creadoPor: 'Ana',
@@ -39,7 +40,7 @@ describe('PedidoForm', () => {
     render(
       <PedidoForm
         productos={productos}
-        colaciones={colaciones}
+        platos={platos}
         clientes={clientes}
         onSubmit={vi.fn()}
         onCancel={vi.fn()}
@@ -56,14 +57,14 @@ describe('PedidoForm', () => {
     render(
       <PedidoForm
         productos={productos}
-        colaciones={colaciones}
+        platos={platos}
         clientes={clientes}
         onSubmit={onSubmit}
         onCancel={vi.fn()}
       />,
     );
 
-    const selectPrecarga = screen.getByLabelText(/Precargar desde colación/);
+    const selectPrecarga = screen.getByLabelText(/Precargar desde plato/);
     fireEvent.change(selectPrecarga, { target: { value: 'c1' } });
 
     expect(screen.getAllByText(/Pescado frito/).length).toBeGreaterThan(0);
@@ -78,16 +79,17 @@ describe('PedidoForm', () => {
     });
     await vi.waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     const input = onSubmit.mock.calls[0][0] as PedidoInput;
-    expect(input.colacionId).toBe('c1');
+    expect(input.platoId).toBe('c1');
     expect(input.items).toHaveLength(2);
     expect(input.clienteId).toBe('cli-1');
   });
 
   it('precarga las notas de los items de la colación en el campo notas', async () => {
-    const colacionesConNotas: Colacion[] = [
+    const platosConNotas: Plato[] = [
       {
         id: 'c-notas',
         nombre: 'Menú con notas',
+        tipo: 'menu',
         fecha: '2026-08-21',
         activa: true,
         creadoPor: 'Ana',
@@ -102,14 +104,14 @@ describe('PedidoForm', () => {
     render(
       <PedidoForm
         productos={productos}
-        colaciones={colacionesConNotas}
+        platos={platosConNotas}
         clientes={clientes}
         onSubmit={onSubmit}
         onCancel={vi.fn()}
       />,
     );
 
-    const selectPrecarga = screen.getByLabelText(/Precargar desde colación/);
+    const selectPrecarga = screen.getByLabelText(/Precargar desde plato/);
     fireEvent.change(selectPrecarga, { target: { value: 'c-notas' } });
 
     const selectCliente = screen.getByLabelText(/Cliente/);
@@ -131,7 +133,7 @@ describe('PedidoForm', () => {
     render(
       <PedidoForm
         productos={productos}
-        colaciones={colaciones}
+        platos={platos}
         clientes={clientes}
         onSubmit={onSubmit}
         onCancel={vi.fn()}
@@ -149,7 +151,7 @@ describe('PedidoForm', () => {
     render(
       <PedidoForm
         productos={productos}
-        colaciones={colaciones}
+        platos={platos}
         clientes={clientes}
         onSubmit={onSubmit}
         onCancel={vi.fn()}
@@ -171,7 +173,7 @@ describe('PedidoForm', () => {
     render(
       <PedidoForm
         productos={productosTotal}
-        colaciones={[]}
+        platos={[]}
         clientes={clientes}
         onSubmit={onSubmit}
         onCancel={vi.fn()}
@@ -204,7 +206,7 @@ describe('PedidoForm', () => {
     render(
       <PedidoForm
         productos={productos}
-        colaciones={[]}
+        platos={[]}
         clientes={clientes}
         onSubmit={onSubmit}
         onCancel={vi.fn()}
@@ -242,7 +244,7 @@ describe('PedidoForm', () => {
       clienteDireccion: 'Padre Hurtado 123',
       clienteContacto: '+56912345678',
       registradoPor: 'Ana',
-      colacionId: null,
+      platoId: null,
       items: [
         {
           productoId: 'f1',
@@ -274,7 +276,7 @@ describe('PedidoForm', () => {
       render(
         <PedidoForm
           productos={productos}
-          colaciones={colaciones}
+          platos={platos}
           clientes={clientes}
           inicial={inicial}
           onSubmit={vi.fn()}
@@ -292,7 +294,7 @@ describe('PedidoForm', () => {
     render(
       <PedidoForm
         productos={productos}
-        colaciones={colaciones}
+        platos={platos}
         clientes={clientes}
         onSubmit={vi.fn()}
         onCancel={vi.fn()}
@@ -312,7 +314,7 @@ describe('PedidoForm', () => {
     render(
       <PedidoForm
         productos={productos}
-        colaciones={[]}
+        platos={[]}
         clientes={clientes}
         onSubmit={onSubmit}
         onCancel={vi.fn()}
@@ -351,7 +353,7 @@ describe('PedidoForm', () => {
     render(
       <PedidoForm
         productos={productos}
-        colaciones={[]}
+        platos={[]}
         clientes={clientes}
         onSubmit={onSubmit}
         onCancel={vi.fn()}
@@ -387,7 +389,7 @@ describe('PedidoForm', () => {
       clienteDireccion: 'Padre Hurtado 123',
       clienteContacto: '+56912345678',
       registradoPor: 'Ana',
-      colacionId: null,
+      platoId: null,
       items: [
         { productoId: 'f1', nombre: 'Pescado frito', precio: 6500, cantidad: 1, rol: 'fondo' },
       ],
@@ -401,7 +403,7 @@ describe('PedidoForm', () => {
     render(
       <PedidoForm
         productos={productos}
-        colaciones={colaciones}
+        platos={platos}
         clientes={clientes}
         inicial={inicial}
         onSubmit={vi.fn()}

@@ -113,7 +113,7 @@ export function PedidoTablero({
                         {p.fecha}
                         {' · '}
                         {p.tipoEntrega === 'delivery' ? 'Delivery PH' : 'Retiro'}
-                        {p.colacionId ? ' · colación' : ''}
+                        {p.platoId ? ' · plato' : ''}
                       </span>
                     </div>
                     <span className={styles.total}>{pesos(p.total)}</span>

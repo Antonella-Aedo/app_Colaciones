@@ -1,0 +1,488 @@
+/* Platos — variante "Poster".
+   Grid de cards uniformes (misma altura por fila, cap de ítems visible).
+   El día/fecha manda en menús; los activos llevan el riel de tres
+   compartimentos de la marca. El ojo aparece al hover/focus y abre el
+   detalle completo del plato en modal. */
+
+.muted {
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+.error {
+  color: var(--color-danger);
+}
+
+/* --- Grid uniforme ------------------------------------------------------------ */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-4);
+  align-items: stretch;
+}
+
+/* --- Card -------------------------------------------------------------------- */
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-5) var(--space-4);
+  background: var(--surface-1);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-1);
+  overflow: hidden;
+  cursor: pointer;
+  transition:
+    box-shadow var(--dur) var(--ease-out),
+    transform var(--dur) var(--ease-out);
+}
+
+.card:hover {
+  box-shadow: var(--elev-2);
+  transform: translateY(-2px);
+}
+
+/* Riel de tres compartimentos: solo visible en la colación activa */
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background-image: linear-gradient(
+    90deg,
+    var(--cat-fondo) 0 33.4%,
+    var(--cat-ensalada) 33.4% 66.7%,
+    var(--cat-agregado) 66.7% 100%
+  );
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease-out);
+}
+
+.card[data-activa='true']::before {
+  opacity: 1;
+}
+
+/* --- Ojo: affordance del detalle, visible al hover o al recibir foco ---------- */
+
+.ojo {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 1;
+  width: 34px;
+  height: 34px;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: var(--radius-pill);
+  background: var(--surface-1);
+  box-shadow: var(--elev-1);
+  color: var(--text-secondary);
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    opacity var(--dur) var(--ease-out),
+    transform var(--dur) var(--ease-out);
+}
+
+.ojo:hover {
+  color: var(--brand-700);
+}
+
+.ojo svg {
+  width: 17px;
+  height: 17px;
+}
+
+.card:hover .ojo,
+.card:focus-within .ojo {
+  opacity: 1;
+  transform: none;
+}
+
+@media (hover: none) {
+  .ojo {
+    opacity: 0.9;
+    transform: none;
+  }
+}
+
+/* --- Foto hero: a sangre bajo el riel, altura fija para cards uniformes ------ */
+
+.foto {
+  display: block;
+  width: calc(100% + var(--space-5) * 2);
+  height: 140px;
+  margin: calc(var(--space-6) * -1) calc(var(--space-5) * -1) var(--space-1);
+  object-fit: cover;
+  pointer-events: none;
+}
+
+/* --- Cabecera ------------------------------------------------------------------ */
+
+.encabezado {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 22px;
+  padding-right: var(--space-8);
+}
+
+.eyebrow {
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.badge {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--brand-700);
+  background: var(--brand-50);
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+}
+
+.badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand-500);
+}
+
+.dia {
+  font-size: var(--text-display);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--track-tight);
+  line-height: 1.05;
+  text-transform: capitalize;
+  color: var(--text-primary);
+}
+
+.fecha {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- Ítems: 4 visibles + "+N más", el alto reservado iguala las cards --------- */
+
+.items {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: var(--space-4) 0 0;
+  border-top: 1px solid var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1;
+  min-height: 8rem;
+}
+
+.item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+}
+
+.item::before {
+  content: '';
+  flex: none;
+  align-self: center;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.item[data-rol='fondo']::before {
+  background: var(--cat-fondo);
+}
+
+.item[data-rol='agregado']::before {
+  background: var(--cat-agregado);
+}
+
+.item[data-rol='ensalada']::before {
+  background: var(--cat-ensalada);
+}
+
+.item[data-rol='extra']::before {
+  background: var(--cat-extra);
+}
+
+.itemNombre {
+  min-width: 0;
+  font-weight: var(--weight-medium);
+  color: var(--text-primary);
+}
+
+.itemNota {
+  font-weight: var(--weight-regular);
+  color: var(--text-tertiary);
+}
+
+.itemRol {
+  margin-left: auto;
+  padding-left: var(--space-3);
+  font-size: var(--text-caption);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.mas {
+  font-size: var(--text-xs);
+  font-style: italic;
+  color: var(--text-tertiary);
+}
+
+.acciones {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-soft);
+}
+
+.acciones button {
+  min-height: 32px;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+}
+
+/* ============================================================================
+   Detalle del menú — overlay + panel con transición de entrada/salida
+   ========================================================================== */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: var(--space-6);
+  background: rgba(20, 32, 26, 0.45);
+  animation: overlayIn var(--dur) var(--ease-out);
+}
+
+.overlay[data-cerrando='true'] {
+  animation: overlayOut var(--dur-fast) var(--ease-out) forwards;
+}
+
+.modal {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: var(--space-8) var(--space-8) var(--space-6);
+  background: var(--surface-1);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--elev-3);
+  animation: modalIn var(--dur) var(--ease-out);
+}
+
+.overlay[data-cerrando='true'] .modal {
+  animation: modalOut var(--dur-fast) var(--ease-out) forwards;
+}
+
+/* Foto a sangre en el tope del detalle; el botón cerrar pide fondo sobre ella */
+.modalFoto {
+  display: block;
+  width: calc(100% + var(--space-8) * 2);
+  height: 170px;
+  margin: calc(var(--space-8) * -1) calc(var(--space-8) * -1) var(--space-4);
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.modalConFoto .cerrar {
+  background: var(--surface-1);
+  box-shadow: var(--elev-1);
+}
+
+@keyframes overlayIn {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes overlayOut {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+}
+
+@keyframes modalOut {
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+.cerrar {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  width: 34px;
+  height: 34px;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-pill);
+  box-shadow: none;
+  background: transparent;
+  color: var(--text-tertiary);
+}
+
+.cerrar:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.cerrar svg {
+  width: 16px;
+  height: 16px;
+}
+
+.modalTitulo {
+  font-size: var(--text-xl);
+  margin: var(--space-1) 0;
+}
+
+.modalMeta {
+  margin: 0 0 var(--space-5);
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+}
+
+/* --- Ítems agrupados por rol: el orden del detalle --------------------------- */
+
+.grupos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.grupoTitulo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+}
+
+.grupoDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.grupo[data-rol='fondo'] .grupoTitulo {
+  color: var(--cat-fondo);
+}
+
+.grupo[data-rol='fondo'] .grupoDot {
+  background: var(--cat-fondo);
+}
+
+.grupo[data-rol='agregado'] .grupoTitulo {
+  color: var(--cat-agregado);
+}
+
+.grupo[data-rol='agregado'] .grupoDot {
+  background: var(--cat-agregado);
+}
+
+.grupo[data-rol='ensalada'] .grupoTitulo {
+  color: var(--cat-ensalada);
+}
+
+.grupo[data-rol='ensalada'] .grupoDot {
+  background: var(--cat-ensalada);
+}
+
+.grupo[data-rol='extra'] .grupoTitulo {
+  color: var(--cat-extra);
+}
+
+.grupo[data-rol='extra'] .grupoDot {
+  background: var(--cat-extra);
+}
+
+.grupoItems {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.grupoItems li {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-primary);
+  line-height: var(--leading-snug);
+}
+
+.modalFoot {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-soft);
+}
+
+@media (max-width: 560px) {
+  .overlay {
+    padding: var(--space-3);
+  }
+
+  .modal {
+    padding: var(--space-6) var(--space-5) var(--space-5);
+    max-height: 92vh;
+  }
+
+  .modalFoto {
+    width: calc(100% + var(--space-5) * 2);
+    margin: calc(var(--space-6) * -1) calc(var(--space-5) * -1) var(--space-4);
+  }
+}

@@ -36,14 +36,16 @@ export interface TxOp {
   data?: unknown;
 }
 
-export interface ColacionesBridge {
+// El bridge se llama `colaciones` por el nombre de la app (app-colaciones);
+// es el canal IPC de TODA la base de datos, no solo de la colección platos.
+export interface DbBridge {
   invoke(op: DbOp, ...args: unknown[]): Promise<unknown>;
   dbPath(): Promise<string>;
 }
 
 declare global {
   interface Window {
-    colaciones?: ColacionesBridge;
+    colaciones?: DbBridge;
   }
 }
 

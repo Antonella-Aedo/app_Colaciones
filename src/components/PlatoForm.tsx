@@ -1,24 +1,26 @@
 import { useMemo, useState } from 'react';
-import type { Colacion, ColacionInput, ColacionItem, Producto, RolItem } from '../types';
+import type { Plato, PlatoInput, PlatoItem, Producto, RolItem, TipoPlato } from '../types';
 import { hoyISO } from '../utils/date';
-import styles from './ColacionForm.module.css';
+import styles from './PlatoForm.module.css';
 import { mensajeDeError } from '../utils/errores';
 
 const ROLES: RolItem[] = ['fondo', 'agregado', 'ensalada', 'extra'];
 
 interface Props {
   productos: Producto[];
-  inicial?: Colacion | null;
-  onSubmit: (input: ColacionInput) => Promise<void>;
+  inicial?: Plato | null;
+  onSubmit: (input: PlatoInput) => Promise<void>;
   onCancel: () => void;
 }
 
-export function ColacionForm({ productos, inicial, onSubmit, onCancel }: Props) {
+export function PlatoForm({ productos, inicial, onSubmit, onCancel }: Props) {
+  const [tipo, setTipo] = useState<TipoPlato>(inicial?.tipo ?? 'menu');
   const [nombre, setNombre] = useState(inicial?.nombre ?? '');
   const [fecha, setFecha] = useState(inicial?.fecha ?? hoyISO());
+  const [valor, setValor] = useState(inicial?.valor?.toString() ?? '');
   const [activa, setActiva] = useState(inicial?.activa ?? false);
   const [creadoPor, setCreadoPor] = useState(inicial?.creadoPor ?? '');
-  const [items, setItems] = useState<ColacionItem[]>(inicial?.items ?? []);
+  const [items, setItems] = useState<PlatoItem[]>(inicial?.items ?? []);
   const [productoSel, setProductoSel] = useState('');
   const [rolSel, setRolSel] = useState<RolItem>('fondo');
   const [nota, setNota] = useState('');
@@ -37,16 +39,15 @@ export function ColacionForm({ productos, inicial, onSubmit, onCancel }: Props) 
       return;
     }
     if (rolSel === 'agregado' && items.some((it) => it.rol === 'agregado')) {
-      setError('Solo se permite un agregado por colación');
+      setError('Solo se permite un agregado por plato');
       return;
     }
     setError(null);
     const orden = items.length + 1;
-    // `nota` es opcional: si esta vacia se OMITE la clave. Ponerla en
-    // `undefined` haria que Firestore rechace la escritura entera con
-    // "Unsupported field value: undefined".
+    // `nota` es opcional: si esta vacia se OMITE la clave (mismo criterio que
+    // el resto de campos opcionales del modelo documental).
     const notaLimpia = nota.trim();
-    const nuevoItem: ColacionItem = { productoId: productoSel, rol: rolSel, orden };
+    const nuevoItem: PlatoItem = { productoId: productoSel, rol: rolSel, orden };
     if (notaLimpia) nuevoItem.nota = notaLimpia;
     setItems((prev) => [...prev, nuevoItem]);
     setProductoSel('');
@@ -63,34 +64,44 @@ export function ColacionForm({ productos, inicial, onSubmit, onCancel }: Props) 
       setError('El nombre es obligatorio');
       return;
     }
-    if (!fecha) {
-      setError('La fecha es obligatoria');
+    if (tipo === 'menu' && !fecha) {
+      setError('La fecha es obligatoria en un menú');
+      return;
+    }
+    if (tipo === 'colacion' && !(Number(valor) > 0)) {
+      setError('Una colación requiere un valor predeterminado mayor que cero');
       return;
     }
     if (items.length === 0) {
-      setError('Agrega al menos un item a la colación');
+      setError('Agrega al menos un item al plato');
       return;
     }
     const tieneFondo = items.some((it) => it.rol === 'fondo');
     if (!tieneFondo) {
-      setError('La colación debe tener al menos un item con rol "fondo"');
+      setError('El plato debe tener al menos un item con rol "fondo"');
       return;
     }
     const agregados = items.filter((it) => it.rol === 'agregado');
     if (agregados.length > 1) {
-      setError('Solo se permite un agregado por colación');
+      setError('Solo se permite un agregado por plato');
       return;
     }
     setError(null);
     setGuardando(true);
     try {
-      await onSubmit({
+      const input: PlatoInput = {
         nombre: nombre.trim(),
-        fecha,
+        tipo,
         activa,
         creadoPor: creadoPor.trim(),
         items,
-      });
+      };
+      // Opcionales: se OMITE la clave cuando no aplica (sin undefined).
+      if (fecha) input.fecha = fecha;
+      if (tipo === 'colacion' && valor.trim()) input.valor = Number(valor);
+      // La foto no se edita en el formulario: se conserva la que traía el plato.
+      if (inicial?.foto) input.foto = inicial.foto;
+      await onSubmit(input);
     } catch (err) {
       setError(mensajeDeError(err));
     } finally {
@@ -103,16 +114,37 @@ export function ColacionForm({ productos, inicial, onSubmit, onCancel }: Props) 
       {error && <p className={styles.error}>{error}</p>}
 
       <fieldset className={styles.section}>
-        <legend className={styles.sectionTitle}>Menú del día</legend>
-        <label className={styles.field}>
-          Nombre *
-          <input value={nombre} onChange={(e) => setNombre(e.target.value)} autoFocus placeholder="ej. Menú del día 20/08" />
-        </label>
+        <legend className={styles.sectionTitle}>Datos del plato</legend>
         <div className={styles.row}>
           <label className={styles.field}>
-            Fecha *
+            Tipo *
+            <select value={tipo} onChange={(e) => setTipo(e.target.value as TipoPlato)}>
+              <option value="menu">Menú — ítems libres, del día</option>
+              <option value="colacion">Colación — set con valor fijo</option>
+            </select>
+          </label>
+          <label className={styles.field}>
+            Nombre *
+            <input value={nombre} onChange={(e) => setNombre(e.target.value)} autoFocus placeholder="ej. Menú del día 20/08" />
+          </label>
+        </div>
+        <div className={styles.row}>
+          <label className={styles.field}>
+            Fecha {tipo === 'menu' ? '*' : '(opcional)'}
             <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
           </label>
+          {tipo === 'colacion' && (
+            <label className={styles.field}>
+              Valor fijo *
+              <input
+                type="number"
+                inputMode="numeric"
+                value={valor}
+                onChange={(e) => setValor(e.target.value)}
+                placeholder="6500"
+              />
+            </label>
+          )}
           <label className={styles.field}>
             Armado por
             <input value={creadoPor} onChange={(e) => setCreadoPor(e.target.value)} placeholder="usuario" />
@@ -120,7 +152,7 @@ export function ColacionForm({ productos, inicial, onSubmit, onCancel }: Props) 
         </div>
         <label className={styles.check}>
           <input type="checkbox" checked={activa} onChange={(e) => setActiva(e.target.checked)} />
-          Menú del día activo
+          Disponible hoy
         </label>
       </fieldset>
 
@@ -174,7 +206,7 @@ export function ColacionForm({ productos, inicial, onSubmit, onCancel }: Props) 
 
       <div className={styles.actions}>
         <button type="submit" className="primary" disabled={guardando}>
-          {guardando ? 'Guardando…' : 'Guardar colación'}
+          {guardando ? 'Guardando…' : 'Guardar plato'}
         </button>
         <button type="button" onClick={onCancel}>Cancelar</button>
       </div>

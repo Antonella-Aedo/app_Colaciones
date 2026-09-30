@@ -56,7 +56,7 @@ export function LoginPage() {
               Bienvenido
             </h1>
             <p className={styles.subtitulo}>
-              Ingresa con tu correo autorizado para gestionar las colaciones del día.
+              Ingresa con tu correo autorizado para gestionar los platos del día.
             </p>
           </header>
 

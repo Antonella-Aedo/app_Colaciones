@@ -107,7 +107,7 @@ export function Preview() {
       >
         <PedidoForm
           productos={productos}
-          colaciones={[]}
+          platos={[]}
           clientes={[{ id: 'c1', direccion: 'Av. Balmaceda 1240', contacto: '+56 9 1234 5678', nombre: 'Constructora Andes' }]}
           onSubmit={async () => setDrawerPedido(false)}
           onCancel={() => setDrawerPedido(false)}

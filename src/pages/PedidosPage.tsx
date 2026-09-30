@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { usePedidos } from '../hooks/usePedidos';
 import { useProductos } from '../hooks/useProductos';
-import { useColaciones } from '../hooks/useColaciones';
+import { usePlatos } from '../hooks/usePlatos';
 import { useClientes } from '../hooks/useClientes';
 import { PedidoList } from '../components/PedidoList';
 import { PedidoForm } from '../components/PedidoForm';
@@ -13,7 +13,7 @@ import styles from './PedidosPage.module.css';
 export function PedidosPage() {
   const { pedidos, loading, error, create, update, remove, changeEstado, confirmarPago, verificarDireccion } = usePedidos();
   const { productos } = useProductos();
-  const { colaciones } = useColaciones();
+  const { platos } = usePlatos();
   const { clientes, findOrCreate } = useClientes();
   const [mostrandoForm, setMostrandoForm] = useState(false);
   const [editando, setEditando] = useState<Pedido | null>(null);
@@ -106,7 +106,7 @@ export function PedidosPage() {
           key={editando?.id ?? 'nuevo'}
           inicial={editando}
           productos={productos}
-          colaciones={colaciones}
+          platos={platos}
           clientes={clientes}
           onSubmit={handleSubmit}
           onVerificarDireccion={verificarDireccion}

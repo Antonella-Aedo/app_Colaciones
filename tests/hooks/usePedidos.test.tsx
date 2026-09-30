@@ -18,7 +18,7 @@ const pedidoInput: PedidoInput = {
   clienteDireccion: 'Padre Hurtado 123',
   clienteContacto: '+56912345678',
   registradoPor: 'admin',
-  colacionId: null,
+  platoId: null,
   items: [
     { productoId: 'p1', nombre: 'Sándwich', precio: 1500, cantidad: 2, rol: 'fondo' },
   ],

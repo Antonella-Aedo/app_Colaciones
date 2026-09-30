@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { installTestDb } from '../helpers/testDb';
-import { ColacionForm } from '../../src/components/ColacionForm';
-import type { Producto, ColacionInput } from '../../src/types';
+import { PlatoForm } from '../../src/components/PlatoForm';
+import type { Producto, PlatoInput } from '../../src/types';
 
 const productos: Producto[] = [
   { id: 'f1', nombre: 'Pescado frito', descripcion: '', precio: 6500, categoria: 'fondo', disponible: true },
@@ -14,25 +14,25 @@ beforeEach(() => {
   installTestDb();
 });
 
-describe('ColacionForm', () => {
+describe('PlatoForm', () => {
   it('renderiza con productos del catálogo', () => {
-    render(<ColacionForm productos={productos} onSubmit={vi.fn()} onCancel={vi.fn()} />);
-    expect(screen.getByText('Guardar colación')).toBeDefined();
+    render(<PlatoForm productos={productos} onSubmit={vi.fn()} onCancel={vi.fn()} />);
+    expect(screen.getByText('Guardar plato')).toBeDefined();
     expect(screen.getByText('Pescado frito (fondo)')).toBeDefined();
   });
 
   it('no permite guardar sin items', async () => {
     const onSubmit = vi.fn();
-    render(<ColacionForm productos={productos} onSubmit={onSubmit} onCancel={vi.fn()} />);
+    render(<PlatoForm productos={productos} onSubmit={onSubmit} onCancel={vi.fn()} />);
     fireEvent.change(screen.getByLabelText(/Nombre/), { target: { value: 'Menú' } });
-    fireEvent.click(screen.getByText('Guardar colación'));
-    await vi.waitFor(() => expect(screen.getByText('Agrega al menos un item a la colación')).toBeDefined());
+    fireEvent.click(screen.getByText('Guardar plato'));
+    await vi.waitFor(() => expect(screen.getByText('Agrega al menos un item al plato')).toBeDefined());
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
   it('requiere al menos un item con rol fondo', async () => {
     const onSubmit = vi.fn();
-    render(<ColacionForm productos={productos} onSubmit={onSubmit} onCancel={vi.fn()} />);
+    render(<PlatoForm productos={productos} onSubmit={onSubmit} onCancel={vi.fn()} />);
     fireEvent.change(screen.getByLabelText(/Nombre/), { target: { value: 'Menú' } });
 
     // agregar un item con rol ensalada (no fondo)
@@ -40,26 +40,26 @@ describe('ColacionForm', () => {
     fireEvent.change(screen.getByDisplayValue('fondo'), { target: { value: 'ensalada' } });
     fireEvent.click(screen.getByText('Agregar'));
 
-    fireEvent.click(screen.getByText('Guardar colación'));
+    fireEvent.click(screen.getByText('Guardar plato'));
     await vi.waitFor(() =>
-      expect(screen.getByText('La colación debe tener al menos un item con rol "fondo"')).toBeDefined(),
+      expect(screen.getByText('El plato debe tener al menos un item con rol "fondo"')).toBeDefined(),
     );
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
   it('agrega item fondo y guarda', async () => {
-    const onSubmit = vi.fn(async (_input: ColacionInput): Promise<void> => {});
-    render(<ColacionForm productos={productos} onSubmit={onSubmit} onCancel={vi.fn()} />);
+    const onSubmit = vi.fn(async (_input: PlatoInput): Promise<void> => {});
+    render(<PlatoForm productos={productos} onSubmit={onSubmit} onCancel={vi.fn()} />);
     fireEvent.change(screen.getByLabelText(/Nombre/), { target: { value: 'Menú del día' } });
 
     fireEvent.change(screen.getByDisplayValue('— Producto del catálogo —'), { target: { value: 'f1' } });
     fireEvent.click(screen.getByText('Agregar'));
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Guardar colación'));
+      fireEvent.click(screen.getByText('Guardar plato'));
     });
     await vi.waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
-    const input = onSubmit.mock.calls[0][0] as ColacionInput;
+    const input = onSubmit.mock.calls[0][0] as PlatoInput;
     expect(input.nombre).toBe('Menú del día');
     expect(input.items).toHaveLength(1);
     expect(input.items[0].rol).toBe('fondo');
@@ -68,27 +68,27 @@ describe('ColacionForm', () => {
   it('sin nota, el item NO lleva la clave `nota` (Firestore rechaza undefined)', async () => {
     // Regresión: el form ponía `nota: nota.trim() || undefined`, y Firestore
     // rechaza el documento entero con "Unsupported field value: undefined",
-    // rompiendo la creación de colaciones en producción.
-    const onSubmit = vi.fn(async (_input: ColacionInput): Promise<void> => {});
-    render(<ColacionForm productos={productos} onSubmit={onSubmit} onCancel={vi.fn()} />);
+    // rompiendo la creación de platos en producción.
+    const onSubmit = vi.fn(async (_input: PlatoInput): Promise<void> => {});
+    render(<PlatoForm productos={productos} onSubmit={onSubmit} onCancel={vi.fn()} />);
     fireEvent.change(screen.getByLabelText(/Nombre/), { target: { value: 'Menú sin nota' } });
 
     fireEvent.change(screen.getByDisplayValue('— Producto del catálogo —'), { target: { value: 'f1' } });
     fireEvent.click(screen.getByText('Agregar'));
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Guardar colación'));
+      fireEvent.click(screen.getByText('Guardar plato'));
     });
     await vi.waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
 
-    const input = onSubmit.mock.calls[0][0] as ColacionInput;
+    const input = onSubmit.mock.calls[0][0] as PlatoInput;
     expect(Object.keys(input.items[0])).not.toContain('nota');
     expect(JSON.stringify(input)).not.toContain('undefined');
   });
 
   it('con nota, el item sí la incluye', async () => {
-    const onSubmit = vi.fn(async (_input: ColacionInput): Promise<void> => {});
-    render(<ColacionForm productos={productos} onSubmit={onSubmit} onCancel={vi.fn()} />);
+    const onSubmit = vi.fn(async (_input: PlatoInput): Promise<void> => {});
+    render(<PlatoForm productos={productos} onSubmit={onSubmit} onCancel={vi.fn()} />);
     fireEvent.change(screen.getByLabelText(/Nombre/), { target: { value: 'Menú con nota' } });
 
     fireEvent.change(screen.getByDisplayValue('— Producto del catálogo —'), { target: { value: 'f1' } });
@@ -96,17 +96,17 @@ describe('ColacionForm', () => {
     fireEvent.click(screen.getByText('Agregar'));
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Guardar colación'));
+      fireEvent.click(screen.getByText('Guardar plato'));
     });
     await vi.waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
 
-    const input = onSubmit.mock.calls[0][0] as ColacionInput;
+    const input = onSubmit.mock.calls[0][0] as PlatoInput;
     expect(input.items[0].nota).toBe('sin sal');
   });
 
   it('no permite agregar más de un item con rol agregado', async () => {
     const onSubmit = vi.fn();
-    render(<ColacionForm productos={productos} onSubmit={onSubmit} onCancel={vi.fn()} />);
+    render(<PlatoForm productos={productos} onSubmit={onSubmit} onCancel={vi.fn()} />);
     fireEvent.change(screen.getByLabelText(/Nombre/), { target: { value: 'Menú' } });
 
     // agregar un item con rol fondo
@@ -124,9 +124,52 @@ describe('ColacionForm', () => {
 
     // el segundo agregado debe ser rechazado con un mensaje de error
     await vi.waitFor(() =>
-      expect(screen.getByText('Solo se permite un agregado por colación')).toBeDefined(),
+      expect(screen.getByText('Solo se permite un agregado por plato')).toBeDefined(),
     );
     // solo debe haber 2 items en la lista (fondo + 1 agregado), no 3
     expect(screen.getAllByText('Quitar')).toHaveLength(2);
+  });
+
+  it('el submit incluye tipo=menu y fecha por defecto', async () => {
+    const onSubmit = vi.fn(async (_input: PlatoInput): Promise<void> => {});
+    render(<PlatoForm productos={productos} onSubmit={onSubmit} onCancel={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText(/Nombre/), { target: { value: 'Menú' } });
+    fireEvent.change(screen.getByDisplayValue('— Producto del catálogo —'), { target: { value: 'f1' } });
+    fireEvent.click(screen.getByText('Agregar'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Guardar plato'));
+    });
+    const input = onSubmit.mock.calls[0][0] as PlatoInput;
+    expect(input.tipo).toBe('menu');
+    expect(input.fecha).toBeTruthy();
+  });
+
+  it('tipo colación exige valor > 0 y lo envía como número', async () => {
+    const onSubmit = vi.fn(async (_input: PlatoInput): Promise<void> => {});
+    render(<PlatoForm productos={productos} onSubmit={onSubmit} onCancel={vi.fn()} />);
+
+    fireEvent.change(screen.getByLabelText(/Tipo/), {
+      target: { value: 'colacion' },
+    });
+    fireEvent.change(screen.getByLabelText(/Nombre/), { target: { value: 'Colación fija' } });
+    fireEvent.change(screen.getByDisplayValue('— Producto del catálogo —'), { target: { value: 'f1' } });
+    fireEvent.click(screen.getByText('Agregar'));
+
+    // sin valor → error de validación del form
+    fireEvent.click(screen.getByText('Guardar plato'));
+    await vi.waitFor(() =>
+      expect(screen.getByText(/valor predeterminado/i)).toBeDefined(),
+    );
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    // con valor → submit con valor numérico y sin fecha obligatoria
+    fireEvent.change(screen.getByLabelText(/Valor fijo/), { target: { value: '6800' } });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Guardar plato'));
+    });
+    await vi.waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    const input = onSubmit.mock.calls[0][0] as PlatoInput;
+    expect(input.tipo).toBe('colacion');
+    expect(input.valor).toBe(6800);
   });
 });
